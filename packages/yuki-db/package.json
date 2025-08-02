@@ -5,24 +5,24 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": {
+    "./drizzle": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/drizzle/index.d.ts",
+        "default": "./dist/drizzle/index.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./dist/drizzle/index.d.cts",
+        "default": "./dist/drizzle/index.cjs"
       }
     },
-    "./client": {
+    "./drizzle/client": {
       "import": {
-        "types": "./dist/client.d.ts",
-        "default": "./dist/client.js"
+        "types": "./dist/drizzle/client.d.ts",
+        "default": "./dist/drizzle/client.js"
       },
       "require": {
-        "types": "./dist/client.d.cts",
-        "default": "./dist/client.cjs"
+        "types": "./dist/drizzle/client.d.cts",
+        "default": "./dist/drizzle/client.cjs"
       }
     }
   },

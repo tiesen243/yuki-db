@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import type { ActionType, Database } from './types'
+import type { ActionType, Database } from '../types'
 
 export const useDatabaseQuery = <
   // @ts-expect-error - schema will be registered by the user

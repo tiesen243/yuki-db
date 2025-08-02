@@ -1,4 +1,4 @@
-import { useDatabaseMutation, useDatabaseQuery } from 'yuki-db/client'
+import { useDatabaseMutation, useDatabaseQuery } from 'yuki-db/drizzle/client'
 
 import { Button } from '@yuki/ui/button'
 import {

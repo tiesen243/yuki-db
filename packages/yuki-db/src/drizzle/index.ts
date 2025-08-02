@@ -3,9 +3,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { eq } from 'drizzle-orm'
 
-import type { ActionType, Database } from './types'
+import type { ActionType, Database } from '../types'
 
-export type { Database } from './types'
+export type { Database } from '../types'
 
 // @ts-expect-error - db, schema are injected at build time
 export function createHandler({ db, schema }: Database) {
