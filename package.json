@@ -1,0 +1,57 @@
+{
+  "name": "yuki",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*",
+      "tools/*"
+    ],
+    "catalog": {
+      "@types/node": "^24.1.0",
+      "dotenv-cli": "^9.0.0",
+      "eslint": "^9.32.0",
+      "prettier": "^3.6.2",
+      "typescript": "^5.8.3"
+    },
+    "catalogs": {
+      "react": {
+        "@types/react": "^19.1.8",
+        "@types/react-dom": "^19.1.6",
+        "react": "^19.1.1",
+        "react-dom": "^19.1.1"
+      },
+      "tailwind": {
+        "@tailwindcss/postcss": "^4.1.11",
+        "@tailwindcss/vite": "^4.1.11",
+        "tailwindcss": "^4.1.11"
+      }
+    }
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "bump-deps": "bunx npm-check-updates --deep -u && bun install",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspaces": "turbo run clean",
+    "dev": "turbo dev --continue",
+    "format": "turbo run format --continue -- --cache --cache-location .cache/prettiercache",
+    "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/prettiercache",
+    "postinstall": "bun run lint:ws",
+    "lint": "turbo run lint --continue -- --cache --cache-location .cache/eslintcache",
+    "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/eslintcache",
+    "lint:ws": "bunx sherif@latest",
+    "typecheck": "turbo run typecheck"
+  },
+  "prettier": "@yuki/prettier-config",
+  "devDependencies": {
+    "@turbo/gen": "^2.5.5",
+    "@yuki/prettier-config": "workspace:*",
+    "@yuki/tsconfig": "workspace:*",
+    "turbo": "^2.5.5"
+  },
+  "packageManager": "bun@1.2.19",
+  "engines": {
+    "bun": ">=1.2.19",
+    "node": ">=22.0.0"
+  }
+}
