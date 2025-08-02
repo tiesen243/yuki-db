@@ -1,6 +1,6 @@
 {
   "name": "yuki-db",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -32,6 +32,7 @@
     "dev": "tsdown --watch",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
+    "pub": "bun run build && bun publish --tag",
     "typecheck": "tsc --noEmit"
   },
   "prettier": "@yuki/prettier-config",
