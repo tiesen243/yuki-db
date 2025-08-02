@@ -1,13 +1,62 @@
+import { useDatabaseMutation, useDatabaseQuery } from 'yuki-db/client'
+
+import { Button } from '@yuki/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@yuki/ui/card'
+
 export default function HomePage() {
+  const { data, isLoading, refetch } = useDatabaseQuery(
+    {
+      select: ['id', 'title', 'content', 'createdAt'],
+      from: 'posts',
+    },
+    [],
+  )
+
+  const { mutate, isPending } = useDatabaseMutation({
+    action: 'insert',
+    table: 'posts',
+    onSuccess: () => {
+      refetch()
+    },
+  })
+
   return (
     <main className='container'>
-      lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-      veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-      commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-      velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
-      cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id
-      est laborum.
+      <p>Is loading: {isLoading ? 'true' : 'false'}</p>
+
+      <Button
+        disabled={isPending}
+        onClick={() =>
+          mutate({
+            title: 'New Post',
+            content: 'This is a new post created from the client.',
+          })
+        }
+      >
+        Create Post
+      </Button>
+
+      <div className='mt-4 grid grid-cols-3 gap-4'>
+        {data?.map((d) => (
+          <Card key={d.id}>
+            <CardHeader>
+              <CardTitle>{d.title}</CardTitle>
+              <CardDescription>
+                {d.createdAt.toLocaleDateString()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>{d.content}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </main>
   )
 }
