@@ -1,5 +1,3 @@
-import 'yuki-db'
-
 import { createHandler } from 'yuki-db/drizzle'
 
 import { db } from '@yuki/db'
