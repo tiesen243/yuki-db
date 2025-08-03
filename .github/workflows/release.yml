@@ -6,10 +6,21 @@ on:
       - main
       - next
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 permissions:
   contents: write
   issues: write
   pull-requests: write
+
+env:
+  FORCE_COLOR: 3
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
 jobs:
   release:
@@ -26,9 +37,6 @@ jobs:
       - run: bun run build -F yuki-db
 
       - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           echo "GITHUB_TOKEN: $GITHUB_TOKEN"
           echo "NPM_TOKEN: $NPM_TOKEN"
