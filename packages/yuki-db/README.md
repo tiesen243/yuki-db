@@ -71,7 +71,13 @@ declare module 'yuki-db/drizzle' {
 }
 ```
 
-4. **Set up API routes** in your framework of choice.
+### Prisma (comming soon)
+
+## Usage
+
+### Configuring Yuki DB with Drizzle ORM
+
+1. **Set up API routes** in your framework of choice.
 
 **Next.js App Router:**
 
@@ -93,7 +99,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => GET(request)
 export const action = async ({ request }: Route.ActionArgs) => POST(request)
 ```
 
-5. **Configure React Query** and wrap your app with the provider.
+2. **Configure React Query** and wrap your app with the provider.
 
 ```typescript
 // src/lib/query-client.ts
@@ -163,10 +169,6 @@ export default function RootLayout({
   )
 }
 ```
-
-### Prisma (comming soon)
-
-## Usage
 
 ### Query Hooks
 
