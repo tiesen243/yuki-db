@@ -58,7 +58,7 @@
     "dev": "tsdown --watch",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "publish": "bun run build && bun publish --tag",
+    "publish": "bun publish --access public",
     "typecheck": "tsc --noEmit"
   },
   "prettier": "@yuki/prettier-config",
