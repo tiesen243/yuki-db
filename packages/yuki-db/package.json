@@ -1,6 +1,6 @@
 {
   "name": "yuki-db",
-  "version": "0.0.2-canary.1",
+  "version": "0.0.2",
   "description": "A client-side database querying library with React Query support",
   "keywords": [
     "react",
@@ -59,7 +59,6 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "pub": "bun run build && bun publish --tag",
-    "semantic-release": "semantic-release -e semantic-release-monorepo",
     "typecheck": "tsc --noEmit"
   },
   "prettier": "@yuki/prettier-config",
@@ -69,8 +68,6 @@
     "@yuki/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "semantic-release": "^24.2.7",
-    "semantic-release-monorepo": "^8.0.2",
     "tsdown": "^0.13.2",
     "typescript": "catalog:"
   },

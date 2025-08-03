@@ -27,10 +27,6 @@
       "outputs": [".cache/eslintcache"],
       "outputLogs": "new-only"
     },
-    "semantic-release": {
-      "dependsOn": ["^semantic-release"],
-      "cache": false
-    },
     "typecheck": {
       "dependsOn": ["^typecheck"],
       "outputs": [".cache/tsbuildinfo.json"],
