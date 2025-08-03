@@ -27,6 +27,10 @@
       "outputs": [".cache/eslintcache"],
       "outputLogs": "new-only"
     },
+    "publish": {
+      "dependsOn": ["^publish"],
+      "cache": false
+    },
     "typecheck": {
       "dependsOn": ["^typecheck"],
       "outputs": [".cache/tsbuildinfo.json"],
