@@ -37,7 +37,4 @@ jobs:
       - run: bun run build -F yuki-db
 
       - name: Release
-        run: |
-          echo "GITHUB_TOKEN: $GITHUB_TOKEN"
-          echo "NPM_TOKEN: $NPM_TOKEN"
-          bun run semantic-release
+        run: bun run semantic-release
