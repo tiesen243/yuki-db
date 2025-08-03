@@ -40,6 +40,7 @@
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/eslintcache",
     "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/eslintcache",
     "lint:ws": "bunx sherif@latest",
+    "semantic-release": "turbo run semantic-release -F yuki-db",
     "typecheck": "turbo run typecheck"
   },
   "prettier": "@yuki/prettier-config",

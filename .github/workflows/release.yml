@@ -29,4 +29,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: bun run semantic-release -F yuki-db
+        run: bun run semantic-release
