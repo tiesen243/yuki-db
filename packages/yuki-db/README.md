@@ -1,5 +1,16 @@
 # Yuki DB
 
+A type-safe database abstraction layer that integrates seamlessly with React Query and popular ORMs like Drizzle. Yuki DB provides a simple, declarative API for database operations with built-in caching, optimistic updates, and real-time synchronization.
+
+## Features
+
+- 🔥 **Type-safe**: Full TypeScript support with automatic type inference
+- ⚡ **React Query Integration**: Built-in caching, background updates, and optimistic mutations
+- 🎯 **Declarative API**: Simple, intuitive syntax for database operations
+- 🔄 **Real-time Updates**: Automatic cache invalidation and synchronization
+- 🛠️ **ORM Agnostic**: Currently supports Drizzle ORM with Prisma support coming soon
+- 📦 **Framework Flexible**: Works with Next.js, React Router, and other React frameworks that support RSC (React Server Components).
+
 ## Installation
 
 ```bash
@@ -12,13 +23,11 @@ pnpm add yuki-db @tanstack/react-query
 bun add yuki-db @tanstack/react-query
 ```
 
-## Usage
+## Setup Guide
 
 ### Drizzle
 
-#### Setup
-
-1. Define your database schema using Drizzle ORM in `src/server/db/schema.ts`.
+1. **Define your database schema** using Drizzle ORM in `src/server/db/schema.ts`.
 
 ```typescript
 // src/server/db/schema.ts
@@ -33,7 +42,7 @@ export const posts = pgTable('posts', (t) => ({
 }))
 ```
 
-2. Create a database instance in `src/server/db/index.ts`.
+2. **Create a database instance** in `src/server/db/index.ts`.
 
 ```typescript
 // src/server/db/index.ts
@@ -42,7 +51,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 export const db = drizzle(process.env.DATABASE_URL)
 ```
 
-3. Use the `createHandler` function from `yuki-db/drizzle` to create API handlers for your database operations.
+3. **Create API handlers** using the `createHandler` function from `yuki-db/drizzle`.
 
 ```typescript
 // src/lib/db.ts
@@ -62,19 +71,21 @@ declare module 'yuki-db/drizzle' {
 }
 ```
 
-4. Use the `GET` and `POST` handlers in your API routes.
+4. **Set up API routes** in your framework of choice.
 
-- Next.js API Route Example:
+**Next.js App Router:**
 
 ```typescript
 // src/app/api/db/route.ts
+
 export { GET, POST } from '@/lib/db'
 ```
 
-- React Router (v7) Example:
+**React Router v7:**
 
 ```typescript
 // src/routes/api.db.ts
+
 import type { Route } from './+types/api.db'
 import { GET, POST } from '@/lib/db'
 
@@ -82,10 +93,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => GET(request)
 export const action = async ({ request }: Route.ActionArgs) => POST(request)
 ```
 
-5. Set up your React Query client to use the `yuki-db` hooks.
+5. **Configure React Query** and wrap your app with the provider.
 
 ```typescript
 // src/lib/query-client.ts
+
 import { defaultShouldDehydrateQuery, QueryClient } from '@tanstack/react-query'
 
 export const createQueryClient = () =>
@@ -108,6 +120,7 @@ export const createQueryClient = () =>
 
 ```tsx
 // src/components/provider.tsx
+
 import type { QueryClient } from '@tanstack/react-query'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { getQueryClient } from '@/lib/query-client'
@@ -135,6 +148,7 @@ Then wrap your application with the `Provider` component:
 
 ```tsx
 // src/app/layout.tsx
+
 import { Provider } from '@/components/provider'
 
 export default function RootLayout({
@@ -150,30 +164,85 @@ export default function RootLayout({
 }
 ```
 
-#### Query Hooks
+### Prisma (comming soon)
 
-```typescript
-const { data, isLoading, error, refetch } = useDatabaseQuery(
-  {
+## Usage
+
+### Query Hooks
+
+Use `useDatabaseQuery` for fetching data with automatic caching and background updates:
+
+```tsx
+import { useDatabaseQuery } from 'yuki-db/drizzle'
+
+function PostsList() {
+  const {
+    data: posts,
+    isLoading,
+    error,
+  } = useDatabaseQuery({
     select: ['id', 'title', 'content', 'createdAt'],
     from: 'posts',
-  },
-  [],
-)
+  })
+
+  if (isLoading) return <div>Loading posts...</div>
+  if (error) return <div>Error: {error.message}</div>
+
+  return (
+    <div>
+      {posts?.map((post) => (
+        <article key={post.id}>
+          <h2>{post.title}</h2>
+          <p>{post.content}</p>
+          <time>{post.createdAt.toLocaleDateString()}</time>
+        </article>
+      ))}
+    </div>
+  )
+}
 ```
 
-#### Mutation Hooks
+### Mutation Hooks
 
-```typescript
-const { mutate, isPending, error } = useDatabaseMutation({
-  action: 'insert',
-  table: 'posts',
-  onSuccess: () => {},
-  onError: (error) => {},
-})
+Use `useDatabaseMutation` for creating, updating, and deleting data with optimistic updates:
+
+```tsx
+import { useDatabaseMutation } from 'yuki-db/drizzle'
+
+function CreatePost() {
+  const { mutate: createPost, isPending } = useDatabaseMutation({
+    action: 'insert',
+    table: 'posts',
+    onSuccess: () => {
+      // Automatically invalidates and refetches related queries
+      console.log('Post created successfully!')
+    },
+    onError: (error) => {
+      console.error('Failed to create post:', error)
+    },
+  })
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+
+    createPost({
+      title: formData.get('title') as string,
+      content: formData.get('content') as string,
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input name='title' placeholder='Post title' required />
+      <textarea name='content' placeholder='Post content' required />
+      <button type='submit' disabled={isPending}>
+        {isPending ? 'Creating...' : 'Create Post'}
+      </button>
+    </form>
+  )
+}
 ```
-
-### Prisma (comming soon)
 
 ## License
 
