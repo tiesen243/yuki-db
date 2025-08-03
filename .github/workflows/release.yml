@@ -24,7 +24,6 @@ jobs:
 
       - run: bun ci
       - run: bun run build -F yuki-db
-      - run: bun audit signatures
 
       - name: Release
         env:

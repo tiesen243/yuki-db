@@ -22,7 +22,7 @@
     "@yuki/db": "workspace:*",
     "@yuki/ui": "workspace:*",
     "@yuki/validators": "workspace:*",
-    "isbot": "^5.1.28",
+    "isbot": "^5.1.29",
     "react": "catalog:react",
     "react-dom": "catalog:react",
     "react-router": "^7.7.1",
