@@ -28,7 +28,7 @@
       "outputLogs": "new-only"
     },
     "publish": {
-      "cache": true
+      "cache": false
     },
     "typecheck": {
       "dependsOn": ["^typecheck"],
