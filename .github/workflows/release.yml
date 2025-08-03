@@ -27,7 +27,5 @@ jobs:
 
       - name: Publish
         env:
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          echo "NPM_CONFIG_TOKEN $NPM_CONFIG_TOKEN"
-          bun run publish
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bun run publish
