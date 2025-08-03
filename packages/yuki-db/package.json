@@ -1,6 +1,6 @@
 {
   "name": "yuki-db",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A client-side database querying library with React Query support",
   "keywords": [
     "react",
@@ -58,7 +58,7 @@
     "dev": "tsdown --watch",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "publish": "npm publish --access public --no-git-checks",
+    "publish": "bun publish --access public",
     "typecheck": "tsc --noEmit"
   },
   "prettier": "@yuki/prettier-config",
