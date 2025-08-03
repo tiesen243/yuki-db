@@ -1,7 +1,29 @@
 {
   "name": "yuki-db",
-  "version": "0.0.1",
+  "version": "0.0.2-canary.1",
+  "description": "A client-side database querying library with React Query support",
+  "keywords": [
+    "react",
+    "react-query",
+    "database",
+    "query",
+    "client-side"
+  ],
+  "homepage": "https://yuki-ui.vercel.app/docs/yuki-db",
+  "bugs": {
+    "url": "https://github.com/tiesen243/yuki-db/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tiesen243/yuki-db.git",
+    "directory": "packages/yuki-db"
+  },
   "license": "MIT",
+  "author": {
+    "name": "Tiesen",
+    "email": "ttien56906@gmail.com",
+    "url": "https://tiesen.id.vn"
+  },
   "type": "module",
   "exports": {
     "./drizzle": {
@@ -25,6 +47,11 @@
       }
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsdown",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
@@ -32,6 +59,7 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "pub": "bun run build && bun publish --tag",
+    "semantic-release": "semantic-release",
     "typecheck": "tsc --noEmit"
   },
   "prettier": "@yuki/prettier-config",
@@ -41,10 +69,15 @@
     "@yuki/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
+    "semantic-release": "^24.2.7",
     "tsdown": "^0.13.2",
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@tanstack/react-query": "^5.84.1"
+    "@tanstack/react-query": "^5.84.1",
+    "drizzle-orm": "^0.44.4"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
