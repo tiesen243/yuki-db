@@ -26,7 +26,7 @@ jobs:
         run: bun run build -F yuki-db
 
       - name: Publish
-        run: bun publish --access public
+        run: bun run publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
