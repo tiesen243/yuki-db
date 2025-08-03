@@ -1,5 +1,5 @@
 {
-  "name": "yuki-db",
+  "name": "yuki-db-query",
   "version": "0.0.1",
   "description": "A client-side database querying library with React Query support",
   "keywords": [
