@@ -28,12 +28,12 @@ jobs:
       - name: Check version changes
         run: |
           if git diff --name-only | grep -qE 'packages/yuki-db/package.json'; then
-            echo "version changed"
             echo "changed=true" >> $GITHUB_OUTPUT 
           else      
-            echo "version don't changed"
             echo "changed=false" >> $GITHUB_OUTPUT 
           fi
+
+          echo "Version changed: ${{ steps.version_check.outputs.changed }}"
 
       - name: Build
         if: steps.version_check.outputs.changed == 'true'
