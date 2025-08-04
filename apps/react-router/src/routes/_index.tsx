@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   createDatabaseQueryOptions,
@@ -20,7 +20,11 @@ export default function HomePage() {
   const queryOptions = createDatabaseQueryOptions({
     select: ['id', 'title', 'content', 'createdAt'],
     from: 'posts',
-    where: {},
+    where: {
+      title: {
+        ilike: '%sa%',
+      },
+    },
     order: {
       title: 'asc',
     },
@@ -38,7 +42,7 @@ export default function HomePage() {
     },
   })
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = React.useState({
     title: '',
     content: '',
   })
