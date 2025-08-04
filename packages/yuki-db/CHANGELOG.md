@@ -8,7 +8,7 @@
 - 50e8fb9: update mutation
 - 50e8fb9: rename ilike to like
 
-## 0.0.1
+## 1.0.0
 
 ### Patch Changes
 
