@@ -543,6 +543,8 @@ queryClient.invalidateQueries({
 
 Creates API route handlers for database operations.
 
+**Drizzle ORM:**
+
 ```typescript
 import { createHandler } from 'yuki-db/drizzle'
 
@@ -561,6 +563,16 @@ const { GET, POST } = createHandler({
 
 - `GET`: Handler for query operations
 - `POST`: Handler for mutation operations
+
+**Prisma ORM:**
+
+```typescript
+import { createHandler } from 'yuki-db/prisma'
+
+const { GET, POST } = createHandler({
+  db: prismaInstance,
+})
+```
 
 ### Client Hooks
 
@@ -590,11 +602,18 @@ const result = useDatabaseQuery({
 
 **Returns:**
 
-- `data`: Query results
-- `isLoading`: Loading state
-- `error`: Error object if query failed
+- `data`: Query results (undefined while loading)
+- `error`: Error object if query failed (null on success)
+- `isLoading`: True when query is loading for the first time
+- `isError`: True when query has encountered an error
+- `isSuccess`: True when query has completed successfully
+- `isFetching`: True when query is fetching (including background updates)
+- `isRefetching`: True when query is refetching
+- `isPending`: True when query is in pending state
+- `isStale`: True when data is considered stale
 - `refetch`: Function to manually refetch data
-- `isRefetching`: Refetching state
+- `fetchStatus`: Current fetch status ('fetching' | 'paused' | 'idle')
+- `status`: Current query status ('pending' | 'error' | 'success')
 
 #### `useDatabaseMutation`
 
@@ -622,12 +641,16 @@ const mutation = useDatabaseMutation({
 
 **Returns:**
 
+- `data`: Mutation result data (always undefined)
+- `error`: Error object if mutation failed (null on success)
+- `isError`: True when mutation has encountered an error
+- `isIdle`: True when mutation is in idle state
+- `isPending`: True when mutation is currently executing
+- `isSuccess`: True when mutation has completed successfully
 - `mutate`: Function to trigger the mutation
-- `mutateAsync`: Async version of mutate
-- `isPending`: Mutation pending state
-- `error`: Error object if mutation failed
-- `data`: Mutation result data
-- `reset`: Function to reset mutation state
+- `mutateAsync`: Async version of mutate that returns a Promise
+- `reset`: Function to reset mutation state to idle
+- `status`: Current mutation status ('idle' | 'pending' | 'error' | 'success')
 
 #### `createDatabaseQueryOptions`
 
