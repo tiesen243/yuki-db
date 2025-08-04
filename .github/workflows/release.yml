@@ -19,6 +19,9 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Install dependencies
+        run: bun ci
+
       - name: Changeset version
         run: bunx --bun @changesets/cli version
 
@@ -29,10 +32,6 @@ jobs:
           else 
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: Install dependencies
-        if: steps.version_check.outputs.has_changes == 'true'
-        run: bun ci
 
       - name: Build
         if: steps.version_check.outputs.has_changes == 'true'
