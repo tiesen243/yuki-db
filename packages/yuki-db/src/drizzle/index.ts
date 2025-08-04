@@ -1,14 +1,85 @@
+import type { AnyColumn, SQL, SQLWrapper } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  lt,
+  lte,
+  not,
+  or,
+} from 'drizzle-orm'
+
+import type { ActionType, Database } from '../types'
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { eq } from 'drizzle-orm'
-
-import type { ActionType, Database } from '../types'
 
 export type { Database } from '../types'
 
 // @ts-expect-error - db, schema are injected at build time
 export function createHandler({ db, schema }: Database) {
+  function buildWhereCondition(
+    whereObj: Record<string, unknown>,
+    tableSchema: Record<string, unknown>,
+  ): SQL | undefined {
+    const conditions: unknown[] = []
+
+    for (const [key, value] of Object.entries(whereObj)) {
+      if (key === 'OR') {
+        const orConditions = (value as Record<string, unknown>[]).map(
+          (condition) => buildWhereCondition(condition, tableSchema),
+        )
+        conditions.push(or(...orConditions))
+      } else if (key === 'AND') {
+        const andCondition = buildWhereCondition(
+          value as Record<string, unknown>,
+          tableSchema,
+        )
+        conditions.push(andCondition)
+      } else if (key === 'NOT') {
+        const notCondition = buildWhereCondition(
+          value as Record<string, unknown>,
+          tableSchema,
+        )
+        conditions.push(not(notCondition as SQLWrapper))
+      } else {
+        const fieldConditions = Object.entries(
+          value as Record<string, unknown>,
+        ).map(([op, val]) => {
+          const field = tableSchema[key]
+          switch (op) {
+            case 'eq':
+              return eq(field as never, val)
+            case 'ilike':
+              return ilike(field as never, val as string)
+            case 'gt':
+              return gt(field as never, val)
+            case 'gte':
+              return gte(field as never, val)
+            case 'lt':
+              return lt(field as never, val)
+            case 'lte':
+              return lte(field as never, val)
+            case 'ne':
+              return not(eq(field as never, val))
+            default:
+              throw new Error(`Unsupported operator: ${op}`)
+          }
+        })
+        conditions.push(...fieldConditions)
+      }
+    }
+
+    return conditions.length === 1
+      ? (conditions[0] as SQL)
+      : and(...(conditions as SQLWrapper[]))
+  }
+
   return {
     GET: async (request: Request) => {
       const url = new URL(request.url)
@@ -16,8 +87,10 @@ export function createHandler({ db, schema }: Database) {
       const from = url.searchParams.get('from')
       if (!select || !from)
         return new Response('Invalid request', { status: 400 })
+      const where = url.searchParams.get('where')
+      const order = url.searchParams.get('order')
 
-      const data = await db
+      const query = db
         .select(
           select.reduce<Record<string, boolean>>((acc, key) => {
             acc[key] = schema[from][key]
@@ -25,6 +98,52 @@ export function createHandler({ db, schema }: Database) {
           }, {}),
         )
         .from(schema[from])
+
+      let whereCondition: SQLWrapper | undefined
+      if (where)
+        try {
+          const whereObj = JSON.parse(where)
+          whereCondition = buildWhereCondition(
+            whereObj as never,
+            schema[from] as never,
+          )
+        } catch (error: unknown) {
+          if (error instanceof Error)
+            return new Response(`Invalid where clause: ${error.message}`, {
+              status: 400,
+            })
+          return new Response('Invalid where clause', { status: 400 })
+        }
+      if (whereCondition) query.where(whereCondition)
+
+      let orderCondition: SQL[] | undefined
+      if (order) {
+        try {
+          const orderObj = JSON.parse(order) as Record<string, 'asc' | 'desc'>
+          const orders = []
+          for (const [key, direction] of Object.entries(orderObj)) {
+            if (!select.includes(key))
+              return new Response(`Invalid order field: ${key}`, {
+                status: 400,
+              })
+
+            if (direction === 'asc')
+              orders.push(asc(schema[from][key] as AnyColumn))
+            else orders.push(desc(schema[from][key] as AnyColumn))
+          }
+
+          orderCondition = orders.length > 0 ? orders : undefined
+        } catch (error: unknown) {
+          if (error instanceof Error)
+            return new Response(`Invalid order clause: ${error.message}`, {
+              status: 400,
+            })
+          return new Response('Invalid order clause', { status: 400 })
+        }
+      }
+      if (orderCondition) query.orderBy(...orderCondition)
+
+      const data = await query
 
       return Response.json(data, {
         headers: { 'Content-Type': 'application/json' },

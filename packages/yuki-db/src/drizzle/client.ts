@@ -2,34 +2,50 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import type { ActionType, Database } from '../types'
 
-export const useDatabaseQuery = <
+type WhereOperator = 'eq' | 'ilike' | 'gt' | 'gte' | 'lt' | 'lte' | 'ne'
+
+type FieldCondition<T> = Partial<Record<WhereOperator, T>>
+
+type WhereClause<TSchema> = {
+  [K in keyof TSchema]?: FieldCondition<TSchema[K]>
+} & {
+  OR?: WhereClause<TSchema>[]
+  AND?: WhereClause<TSchema>
+  NOT?: WhereClause<TSchema>
+}
+
+export const createDatabaseQueryOptions = <
   // @ts-expect-error - schema will be registered by the user
   TFrom extends keyof Database['schema'],
   // @ts-expect-error - schema will be registered by the user
   TSelect extends (keyof Database['schema'][TFrom]['$inferSelect'])[],
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   TData = {
     // @ts-expect-error - schema will be registered by the user
     [K in TSelect[number]]: Database['schema'][TFrom]['$inferSelect'][K]
   },
->(
-  options: {
-    select: TSelect
-    from: TFrom
-  },
-  deps?: string[],
-): {
-  data?: TData[]
-  error: Error | null
-  isLoading: boolean
-  refetch: () => unknown
+>(options: {
+  select: TSelect
+  from: TFrom
+  // @ts-expect-error - schema will be registered by the user
+  where?: WhereClause<Database['schema'][TFrom]['$inferSelect']>
+  order?: Partial<Record<TSelect[number], 'asc' | 'desc'>>
+}): {
+  queryKey: string[]
+  queryFn: () => Promise<TData[]>
 } => {
   const searchParams = new URLSearchParams()
   searchParams.set('select', options.select.join(','))
   searchParams.set('from', String(options.from))
-  const dependencies = [options.from, ...options.select, ...(deps ?? [])]
+  if (options.where) searchParams.set('where', JSON.stringify(options.where))
+  if (options.order) searchParams.set('order', JSON.stringify(options.order))
+  const dependencies: string[] = [
+    String(options.from),
+    ...options.select.map(String),
+    ...(options.where ? [JSON.stringify(options.where)] : []),
+    ...(options.order ? [JSON.stringify(options.order)] : []),
+  ]
 
-  return useQuery<TData[]>({
+  return {
     queryKey: ['db', ...dependencies],
     queryFn: async () => {
       const response = await fetch(`/api/db?${searchParams.toString()}`, {
@@ -54,7 +70,37 @@ export const useDatabaseQuery = <
         return newItem as TData
       })
     },
-  })
+  }
+}
+
+export const useDatabaseQuery = <
+  // @ts-expect-error - schema will be registered by the user
+  TFrom extends keyof Database['schema'],
+  // @ts-expect-error - schema will be registered by the user
+  TSelect extends (keyof Database['schema'][TFrom]['$inferSelect'])[],
+  TData = {
+    // @ts-expect-error - schema will be registered by the user
+    [K in TSelect[number]]: Database['schema'][TFrom]['$inferSelect'][K]
+  },
+>(
+  options:
+    | {
+        select: TSelect
+        from: TFrom
+        // @ts-expect-error - schema will be registered by the user
+        where?: WhereClause<Database['schema'][TFrom]['$inferSelect']>
+        order?: Partial<Record<TSelect[number], 'asc' | 'desc'>>
+      }
+    | ReturnType<typeof createDatabaseQueryOptions<TFrom, TSelect, TData>>,
+): {
+  data?: TData[]
+  error: Error | null
+  isLoading: boolean
+} => {
+  if (typeof options === 'object' && 'select' in options && 'from' in options)
+    options = createDatabaseQueryOptions(options)
+
+  return useQuery<TData[]>(options)
 }
 
 export const useDatabaseMutation = <
