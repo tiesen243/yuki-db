@@ -1,5 +1,13 @@
 # yuki-db
 
+## 1.0.2
+
+### Patch Changes
+
+- 00267ee: add return type from react query
+- 094f171: update README.md
+- 6bb2d04: update README
+
 ## 1.0.1
 
 ### Patch Changes
