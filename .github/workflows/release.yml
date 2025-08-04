@@ -19,6 +19,17 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Changeset version
+        run: bunx --bun changeset version
+
+      - name: Check version changes
+        run: |
+          if git diff --quiet -- packages/yuki-db/package.json; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else 
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install dependencies
         run: bun ci
 
@@ -29,17 +40,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
-
-      - name: Changeset version
-        run: bun changeset version
-
-      - name: Check version changes
-        run: |
-          if git diff --quiet -- packages/yuki-db/package.json; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else 
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          fi
 
       - name: Commit and push changelog and version bump
         if: steps.version_check.outputs.has_changes == 'true'
