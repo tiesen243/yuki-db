@@ -18,23 +18,23 @@ import {
 import { Trash2Icon } from '@yuki/ui/icons'
 import { Input } from '@yuki/ui/input'
 
-export default function HomePage() {
-  const queryOptions = createDatabaseQueryOptions({
-    select: ['id', 'title', 'content', 'createdAt'],
-    from: 'posts',
-    where: {
-      title: {
-        like: '%sa%',
-      },
-    },
-    order: {
-      title: 'asc',
-    },
-  })
+const queryOptions = createDatabaseQueryOptions({
+  select: ['id', 'title', 'content', 'createdAt'],
+  from: 'posts',
+  where: {
+    title: {},
+  },
+  order: {
+    createdAt: 'desc',
+  },
+})
 
+export default function HomePage() {
   const queryClient = useQueryClient()
-  const { data, isLoading, error } = useDatabaseQuery(queryOptions)
-  const { mutate, isPending } = useDatabaseMutation({
+
+  const { data: posts, isLoading, error } = useDatabaseQuery(queryOptions)
+
+  const { mutate: create, isPending: isCreating } = useDatabaseMutation({
     action: 'insert',
     table: 'posts',
     onSuccess: () => {
@@ -42,18 +42,8 @@ export default function HomePage() {
         queryKey: queryOptions.queryKey,
       })
     },
-  })
-
-  const { mutate: remove, isPending: isRemoving } = useDatabaseMutation({
-    action: 'delete',
-    table: 'posts',
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryOptions.queryKey,
-      })
-    },
-    onError: (err) => {
-      console.error('Error removing post:', err)
+    onError: (error) => {
+      console.error('Error creating post:', error)
     },
   })
 
@@ -69,9 +59,9 @@ export default function HomePage() {
 
       <form
         className='grid gap-4'
-        onSubmit={async (e) => {
+        onSubmit={(e) => {
           e.preventDefault()
-          await mutate(formData)
+          create(formData)
           setFormData({ title: '', content: '' })
         }}
       >
@@ -90,37 +80,58 @@ export default function HomePage() {
           }}
         />
 
-        <Button disabled={isPending}>Create Post</Button>
+        <Button disabled={isCreating}>Create Post</Button>
       </form>
 
       <div className='mt-4 grid grid-cols-3 gap-4'>
-        {data?.map((d) => (
-          <Card key={d.id}>
-            <CardHeader>
-              <CardTitle>{d.title}</CardTitle>
-              <CardDescription>
-                {d.createdAt.toLocaleDateString()}
-              </CardDescription>
-
-              <CardAction>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  disabled={isRemoving}
-                  onClick={() => {
-                    void remove({ id: { eq: d.id } })
-                  }}
-                >
-                  <Trash2Icon />
-                </Button>
-              </CardAction>
-            </CardHeader>
-            <CardContent>
-              <p>{d.content}</p>
-            </CardContent>
-          </Card>
+        {posts?.map((post) => (
+          <PostCard key={post.id} post={post} />
         ))}
       </div>
     </main>
+  )
+}
+
+const PostCard: React.FC<{
+  post: { id: string; title: string; content: string; createdAt: Date }
+}> = ({ post }) => {
+  const queryClient = useQueryClient()
+
+  const { mutate: remove, isPending: isRemoving } = useDatabaseMutation({
+    action: 'delete',
+    table: 'posts',
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryOptions.queryKey,
+      })
+    },
+    onError: (error) => {
+      console.error('Error removing post:', error)
+    },
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{post.title}</CardTitle>
+        <CardDescription>{post.createdAt.toLocaleDateString()}</CardDescription>
+
+        <CardAction>
+          <Button
+            variant='ghost'
+            size='icon'
+            disabled={isRemoving}
+            onClick={() => {
+              remove({ id: { eq: post.id } })
+            }}
+          >
+            <Trash2Icon />
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <p>{post.content}</p>
+      </CardContent>
+    </Card>
   )
 }

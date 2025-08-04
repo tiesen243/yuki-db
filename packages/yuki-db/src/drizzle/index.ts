@@ -159,10 +159,10 @@ export function createHandler({ db, schema }: Database) {
         query.offset(offsetValue)
       }
 
-      const data = await query
-
-      return Response.json(data, {
+      const result = await query.execute()
+      return Response.json(result, {
         headers: { 'Content-Type': 'application/json' },
+        status: 200,
       })
     },
 

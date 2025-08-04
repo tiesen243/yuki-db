@@ -1,3 +1,4 @@
+import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 import type { ActionType, Database } from '../types'
@@ -99,14 +100,9 @@ export const useDatabaseQuery = <
         order?: Partial<Record<TSelect[number], 'asc' | 'desc'>>
       }
     | ReturnType<typeof createDatabaseQueryOptions<TFrom, TSelect, TData>>,
-): {
-  data?: TData[]
-  error: Error | null
-  isLoading: boolean
-} => {
+): UseQueryResult<TData[]> => {
   if (typeof options === 'object' && 'select' in options && 'from' in options)
     options = createDatabaseQueryOptions(options)
-
   return useQuery<TData[]>(options)
 }
 
@@ -115,30 +111,27 @@ export const useDatabaseMutation = <
   // @ts-expect-error - schema will be registered by the user
   TTable extends keyof Database['schema'],
   // @ts-expect-error - schema will be registered by the user
-
   TValues extends Database['schema'][TTable]['$inferInsert'],
 >(options: {
   action: TAction
   table: TTable
   onSuccess?: () => void | Promise<void>
   onError?: (error: Error) => void | Promise<void>
-}): {
-  mutate: (
-    data: TAction extends 'insert'
-      ? TValues
-      : TAction extends 'update'
-        ? {
-            // @ts-expect-error - schema will be registered by the user
-            where: WhereClause<Database['schema'][TTable]['$inferSelect']>
-            data: TValues
-          }
-        : // @ts-expect-error - schema will be registered by the user
-          WhereClause<Database['schema'][TTable]['$inferSelect']>,
-  ) => void | Promise<void>
-  error: Error | null
-  isPending: boolean
-} => {
-  return useMutation({
+}): UseMutationResult<
+  void,
+  Error,
+  TAction extends 'insert'
+    ? TValues
+    : TAction extends 'update'
+      ? {
+          // @ts-expect-error - schema will be registered by the user
+          where: WhereClause<Database['schema'][TTable]['$inferSelect']>
+          data: TValues
+        }
+      : // @ts-expect-error - schema will be registered by the user
+        WhereClause<Database['schema'][TTable]['$inferSelect']>
+> =>
+  useMutation({
     mutationKey: ['db', options.action, options.table],
     mutationFn: async (
       data: TAction extends 'insert'
@@ -179,4 +172,3 @@ export const useDatabaseMutation = <
     onSuccess: options.onSuccess,
     onError: options.onError,
   })
-}
