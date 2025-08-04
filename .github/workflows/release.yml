@@ -20,7 +20,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Changeset version
-        run: bun --bun @changesets/cli version
+        run: bunx --bun @changesets/cli version
 
       - name: Check version changes
         run: |
