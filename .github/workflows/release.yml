@@ -23,7 +23,7 @@ jobs:
         run: bun ci
 
       - name: Changeset version
-        run: bunx --bun @changesets/cli version
+        run: bun changeset version
 
       - name: Check version changes
         run: |
