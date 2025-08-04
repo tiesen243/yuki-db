@@ -34,6 +34,20 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT 
           fi
 
+      - name: Set npm tag
+        id: set_tag
+        run: |
+          if [ "${GITHUB_REF##*/}" = "main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          elif [ "${GITHUB_REF##*/}" = "next" ]; then
+            echo "tag=next" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Debug version changed output
+        run: |
+          echo "Version changed: ${{ steps.version_check.outputs.changed }}"
+          echo "NPM Tag: ${{ steps.set_tag.outputs.tag }}"
+
       - name: Build
         if: steps.version_check.outputs.changed == 'true'
         run: bun run build -F yuki-db
@@ -46,10 +60,9 @@ jobs:
 
       - name: Publish
         if: steps.version_check.outputs.changed == 'true'
-
         run: |
           cd packages/yuki-db
-          bun publish --access public
+          bun publish --access public --tag ${{ steps.set_tag.outputs.tag }}
 
       - name: Commit and push changelog and version bump
         if: steps.version_check.outputs.changed == 'true'
