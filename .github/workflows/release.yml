@@ -33,7 +33,8 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT 
           fi
 
-          echo "Version changed: ${{ steps.version_check.outputs.changed }}"
+      - name: Debug version changed output
+        run: echo "Version changed: ${{ steps.version_check.outputs.changed }}"
 
       - name: Build
         if: steps.version_check.outputs.changed == 'true'
