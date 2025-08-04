@@ -9,11 +9,13 @@ import {
 import { Button } from '@yuki/ui/button'
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@yuki/ui/card'
+import { Trash2Icon } from '@yuki/ui/icons'
 import { Input } from '@yuki/ui/input'
 
 export default function HomePage() {
@@ -22,7 +24,7 @@ export default function HomePage() {
     from: 'posts',
     where: {
       title: {
-        ilike: '%sa%',
+        like: '%sa%',
       },
     },
     order: {
@@ -39,6 +41,19 @@ export default function HomePage() {
       void queryClient.invalidateQueries({
         queryKey: queryOptions.queryKey,
       })
+    },
+  })
+
+  const { mutate: remove, isPending: isRemoving } = useDatabaseMutation({
+    action: 'delete',
+    table: 'posts',
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryOptions.queryKey,
+      })
+    },
+    onError: (err) => {
+      console.error('Error removing post:', err)
     },
   })
 
@@ -86,6 +101,19 @@ export default function HomePage() {
               <CardDescription>
                 {d.createdAt.toLocaleDateString()}
               </CardDescription>
+
+              <CardAction>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  disabled={isRemoving}
+                  onClick={() => {
+                    void remove({ id: { eq: d.id } })
+                  }}
+                >
+                  <Trash2Icon />
+                </Button>
+              </CardAction>
             </CardHeader>
             <CardContent>
               <p>{d.content}</p>

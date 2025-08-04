@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import type { ActionType, Database } from '../types'
 
-type WhereOperator = 'eq' | 'ilike' | 'gt' | 'gte' | 'lt' | 'lte' | 'ne'
+type WhereOperator = 'eq' | 'like' | 'gt' | 'gte' | 'lt' | 'lte' | 'ne'
 
 type FieldCondition<T> = Partial<Record<WhereOperator, T>>
 
@@ -29,6 +29,8 @@ export const createDatabaseQueryOptions = <
   // @ts-expect-error - schema will be registered by the user
   where?: WhereClause<Database['schema'][TFrom]['$inferSelect']>
   order?: Partial<Record<TSelect[number], 'asc' | 'desc'>>
+  limit?: number
+  offset?: number
 }): {
   queryKey: string[]
   queryFn: () => Promise<TData[]>
@@ -38,11 +40,16 @@ export const createDatabaseQueryOptions = <
   searchParams.set('from', String(options.from))
   if (options.where) searchParams.set('where', JSON.stringify(options.where))
   if (options.order) searchParams.set('order', JSON.stringify(options.order))
+  if (options.limit) searchParams.set('limit', String(options.limit))
+  if (options.offset) searchParams.set('offset', String(options.offset))
+
   const dependencies: string[] = [
     String(options.from),
     ...options.select.map(String),
     ...(options.where ? [JSON.stringify(options.where)] : []),
     ...(options.order ? [JSON.stringify(options.order)] : []),
+    ...(options.limit ? [String(options.limit)] : []),
+    ...(options.offset ? [String(options.offset)] : []),
   ]
 
   return {
@@ -108,35 +115,61 @@ export const useDatabaseMutation = <
   // @ts-expect-error - schema will be registered by the user
   TTable extends keyof Database['schema'],
   // @ts-expect-error - schema will be registered by the user
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+
   TValues extends Database['schema'][TTable]['$inferInsert'],
->(
-  options: {
-    action: TAction
-    table: TTable
-    onSuccess?: () => void | Promise<void>
-    onError?: (error: Error) => void | Promise<void>
-  } & (TAction extends 'insert' ? object : { id: string }),
-): {
-  mutate: (values: TValues) => void | Promise<void>
+>(options: {
+  action: TAction
+  table: TTable
+  onSuccess?: () => void | Promise<void>
+  onError?: (error: Error) => void | Promise<void>
+}): {
+  mutate: (
+    data: TAction extends 'insert'
+      ? TValues
+      : TAction extends 'update'
+        ? {
+            // @ts-expect-error - schema will be registered by the user
+            where: WhereClause<Database['schema'][TTable]['$inferSelect']>
+            data: TValues
+          }
+        : // @ts-expect-error - schema will be registered by the user
+          WhereClause<Database['schema'][TTable]['$inferSelect']>,
+  ) => void | Promise<void>
   error: Error | null
   isPending: boolean
 } => {
   return useMutation({
     mutationKey: ['db', options.action, options.table],
-    mutationFn: async (values: TValues) => {
+    mutationFn: async (
+      data: TAction extends 'insert'
+        ? TValues
+        : TAction extends 'update'
+          ? {
+              // @ts-expect-error - schema will be registered by the user
+              where: WhereClause<Database['schema'][TTable]['$inferSelect']>
+              data: TValues
+            }
+          : // @ts-expect-error - schema will be registered by the user
+            WhereClause<Database['schema'][TTable]['$inferSelect']>,
+    ) => {
       const searchParams = new URLSearchParams()
       searchParams.set('action', options.action)
       searchParams.set('table', String(options.table))
-      if (options.action !== 'insert') {
-        // @ts-expect-error - id is required for non-insert actions
-        searchParams.set('id', String(options.id))
-      }
+
+      if (options.action === 'update')
+        searchParams.set('where', JSON.stringify(data.where))
+      else if (options.action === 'delete')
+        searchParams.set('where', JSON.stringify(data))
 
       const response = await fetch(`/api/db?${searchParams.toString()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body:
+          options.action === 'insert'
+            ? JSON.stringify(data)
+            : options.action === 'update'
+              ? JSON.stringify(data.data)
+              : JSON.stringify({}),
       })
       if (!response.ok)
         throw new Error(

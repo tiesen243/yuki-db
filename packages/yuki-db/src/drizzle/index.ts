@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import type { AnyColumn, SQL, SQLWrapper } from 'drizzle-orm'
 import {
   and,
@@ -14,10 +18,6 @@ import {
 } from 'drizzle-orm'
 
 import type { ActionType, Database } from '../types'
-
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 export type { Database } from '../types'
 
@@ -55,7 +55,7 @@ export function createHandler({ db, schema }: Database) {
           switch (op) {
             case 'eq':
               return eq(field as never, val)
-            case 'ilike':
+            case 'like':
               return ilike(field as never, val as string)
             case 'gt':
               return gt(field as never, val)
@@ -89,6 +89,8 @@ export function createHandler({ db, schema }: Database) {
         return new Response('Invalid request', { status: 400 })
       const where = url.searchParams.get('where')
       const order = url.searchParams.get('order')
+      const limit = url.searchParams.get('limit')
+      const offset = url.searchParams.get('offset')
 
       const query = db
         .select(
@@ -143,6 +145,20 @@ export function createHandler({ db, schema }: Database) {
       }
       if (orderCondition) query.orderBy(...orderCondition)
 
+      if (limit) {
+        const limitValue = parseInt(limit, 10)
+        if (isNaN(limitValue) || limitValue < 0)
+          return new Response('Invalid limit value', { status: 400 })
+        query.limit(limitValue)
+      }
+
+      if (offset) {
+        const offsetValue = parseInt(offset, 10)
+        if (isNaN(offsetValue) || offsetValue < 0)
+          return new Response('Invalid offset value', { status: 400 })
+        query.offset(offsetValue)
+      }
+
       const data = await query
 
       return Response.json(data, {
@@ -154,19 +170,41 @@ export function createHandler({ db, schema }: Database) {
       const url = new URL(request.url)
       const action = url.searchParams.get('action') as ActionType
       const table = url.searchParams.get('table')
-      const values = await request.json()
+      const data = await request.json()
 
       try {
         if (action === 'insert') {
-          await db.insert(schema[table]).values(values)
-        } else if (action === 'update') {
-          const id = url.searchParams.get('id')
-          if (!id)
-            return new Response('ID is required for update', { status: 400 })
-          await db
-            .update(schema[table])
-            .set(values)
-            .where(eq(schema[table].id, id))
+          await db.insert(schema[table]).values(data)
+        } else {
+          const where = url.searchParams.get('where')
+          if (!where)
+            return new Response('Where clause is required for update', {
+              status: 400,
+            })
+
+          let whereCondition: SQLWrapper | undefined
+          if (where)
+            try {
+              const whereObj = JSON.parse(where)
+              whereCondition = buildWhereCondition(
+                whereObj as never,
+                schema[table] as never,
+              )
+            } catch (error: unknown) {
+              if (error instanceof Error)
+                return new Response(`Invalid where clause: ${error.message}`, {
+                  status: 400,
+                })
+              return new Response('Invalid where clause', { status: 400 })
+            }
+          if (!whereCondition)
+            return new Response('Where condition is required for update', {
+              status: 400,
+            })
+
+          if (action === 'update')
+            await db.update(schema[table]).set(data).where(whereCondition)
+          else await db.delete(schema[table]).where(whereCondition)
         }
         return new Response('Operation successful', { status: 200 })
       } catch (error) {

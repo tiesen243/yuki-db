@@ -246,6 +246,213 @@ function CreatePost() {
 }
 ```
 
+### API Reference
+
+#### `createDatabaseQueryOptions`
+
+A utility function to create query options for database operations.
+
+```typescript
+import { createDatabaseQueryOptions } from 'yuki-db/drizzle/client'
+
+export const options = createDatabaseQueryOptions({
+  select: ['id', 'title', 'content'],
+  from: 'posts',
+  where: {
+    title: { like: '%Yuki%' },
+  },
+})
+```
+
+#### Options
+
+- `select`: Array of column names to select.
+- `from`: Name of the table to query.
+- `where`: Optional filter conditions.
+- `order`: Optional sorting options.
+- `limit`: Optional limit for the number of results.
+- `offset`: Optional offset for pagination.
+
+#### `useDatabaseQuery`
+
+A hook for fetching data from the database with automatic caching and background updates.
+
+```typescript
+import { useDatabaseQuery } from 'yuki-db/drizzle/client'
+
+useDatabaseQuery(databaseQueryOptions)
+```
+
+##### Options
+
+- `select`: Array of column names to select.
+- `from`: Name of the table to query.
+- `where`: Optional filter conditions.
+
+  ```typescript
+  type WhereOperator = 'eq' | 'like' | 'gt' | 'gte' | 'lt' | 'lte' | 'ne'
+  type FieldCondition<T> = Partial<Record<WhereOperator, T>>
+
+  type WhereClause<TSchema> = {
+    [K in keyof TSchema]?: FieldCondition<TSchema[K]>
+  } & {
+    OR?: WhereClause<TSchema>[]
+    AND?: WhereClause<TSchema>
+    NOT?: WhereClause<TSchema>
+  }
+  ```
+
+- `order`: Optional sorting options.
+
+  ```typescript
+  type OrderClause = Partial<Record<TSelect[number], 'asc' | 'desc'>>
+  ```
+
+#### `useDatabaseMutation`
+
+A hook for performing database mutations (insert, update, delete) with optimistic updates and automatic cache invalidation.
+
+```typescript
+import { useDatabaseMutation } from 'yuki-db/drizzle/client'
+
+useDatabaseMutation({
+  action: 'insert',
+  table: 'posts',
+  onSuccess: () => {
+    console.log('Post created successfully!')
+  },
+  onError: (error) => {
+    console.error('Failed to create post:', error)
+  },
+})
+```
+
+##### Options
+
+- `action`: The type of mutation to perform (`'insert'`, `'update'`, `'delete'`).
+- `table`: Name of the table to mutate.
+- `onSuccess`: Optional callback function called on successful mutation.
+- `onError`: Optional callback function called on mutation error.
+
+##### Actions
+
+**Insert**
+
+```typescript
+const { mutate } = useDatabaseMutation({
+  action: 'insert',
+  table: 'posts',
+})
+
+// Usage
+mutate({
+  title: 'New Post',
+  content: 'Post content',
+})
+```
+
+**Update**
+
+```typescript
+const { mutate } = useDatabaseMutation({
+  action: 'update',
+  table: 'posts',
+})
+
+// Usage
+mutate({
+  where: { id: { eq: 1 } },
+  data: {
+    title: 'Updated Post',
+    content: 'Updated content',
+  },
+})
+```
+
+**Delete**
+
+```typescript
+const { mutate } = useDatabaseMutation({
+  action: 'delete',
+  table: 'posts',
+})
+
+// Usage
+mutate({ id: { eq: 1 } })
+```
+
+#### `createHandler`
+
+Creates API route handlers for database operations that work with your chosen framework.
+
+```typescript
+import { createHandler } from 'yuki-db/drizzle'
+
+import { db } from '@/server/db'
+import * as schema from '@/server/db/schema'
+
+export const { GET, POST } = createHandler({ db, schema })
+```
+
+##### Options
+
+- `db`: Your database instance.
+- `schema`: Your database schema definitions.
+
+##### Returns
+
+- `GET`: Handler function for query operations.
+- `POST`: Handler function for mutation operations.
+
+#### Type Definitions
+
+##### Database Query Options
+
+```typescript
+interface DatabaseQueryOptions<TTable, TSelect> {
+  select: TSelect[]
+  from: TTable
+  where?: WhereClause<TSchema[TTable]>
+  order?: OrderClause<TSelect>
+  limit?: number
+  offset?: number
+}
+```
+
+##### Where Clause
+
+```typescript
+type WhereOperator = 'eq' | 'like' | 'gt' | 'gte' | 'lt' | 'lte' | 'ne'
+type FieldCondition<T> = Partial<Record<WhereOperator, T>>
+
+type WhereClause<TSchema> = {
+  [K in keyof TSchema]?: FieldCondition<TSchema[K]>
+} & {
+  OR?: WhereClause<TSchema>[]
+  AND?: WhereClause<TSchema>
+  NOT?: WhereClause<TSchema>
+}
+```
+
+##### Order Clause
+
+```typescript
+type OrderClause<TSelect> = Partial<Record<TSelect[number], 'asc' | 'desc'>>
+```
+
+##### Mutation Options
+
+```typescript
+interface DatabaseMutationOptions {
+  action: 'insert' | 'update' | 'delete'
+  table: string
+  onSuccess?: (data: any) => void
+  onError?: (error: Error) => void
+  onMutate?: (variables: any) => void
+  onSettled?: (data: any, error: Error | null) => void
+}
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
