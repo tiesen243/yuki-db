@@ -4,7 +4,7 @@ import {
   createDatabaseQueryOptions,
   useDatabaseMutation,
   useDatabaseQuery,
-} from 'yuki-db/drizzle/client'
+} from 'yuki-db'
 
 import { Button } from '@yuki/ui/button'
 import {

@@ -26,24 +26,34 @@
   },
   "type": "module",
   "exports": {
-    "./drizzle": {
+    ".": {
       "import": {
-        "types": "./dist/drizzle/index.d.ts",
-        "default": "./dist/drizzle/index.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/drizzle/index.d.cts",
-        "default": "./dist/drizzle/index.cjs"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     },
-    "./drizzle/client": {
+    "./*": {
       "import": {
-        "types": "./dist/drizzle/client.d.ts",
-        "default": "./dist/drizzle/client.js"
+        "types": "./dist/adapters/*.d.ts",
+        "default": "./dist/adapters/*.js"
       },
       "require": {
-        "types": "./dist/drizzle/client.d.cts",
-        "default": "./dist/drizzle/client.cjs"
+        "types": "./dist/adapters/*.d.cts",
+        "default": "./dist/adapters/*.cjs"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      },
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
       }
     }
   },
