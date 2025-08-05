@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun run with-env vite build",
+    "build": "tsr generate && bun run with-env vite build",
     "clean": "git clean -xdf .cache .nitro .output .tanstack .turbo node_modules",
     "db:generate": "bun run with-env prisma generate",
     "db:push": "bun run with-env prisma db push",
@@ -13,23 +13,27 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "start": "PORT=3002 bun run with-env node ./.output/server/index.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsr generate && tsc --noEmit",
     "with-env": "dotenv -e ../../.env --"
   },
   "prettier": "@yuki/prettier-config",
   "dependencies": {
-    "@tanstack/react-router": "^1.130.2",
-    "@tanstack/react-start": "^1.130.3",
+    "@tanstack/react-router": "^1.130.12",
+    "@tanstack/react-start": "^1.130.15",
     "@yuki/ui": "workspace:*",
     "@yuki/validators": "workspace:*",
     "react": "catalog:react",
-    "react-dom": "catalog:react"
+    "react-dom": "catalog:react",
+    "yuki-db": "workspace:*"
   },
   "devDependencies": {
+    "@prisma/client": "^6.13.0",
     "@tailwindcss/vite": "catalog:tailwind",
+    "@tanstack/router-cli": "^1.130.15",
     "@types/node": "catalog:",
     "@types/react": "catalog:react",
     "@types/react-dom": "catalog:react",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "@yuki/eslint-config": "workspace:*",
     "@yuki/prettier-config": "workspace:*",
     "@yuki/tsconfig": "workspace:*",

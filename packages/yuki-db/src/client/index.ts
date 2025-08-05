@@ -33,7 +33,7 @@ export const useDatabaseQuery = <
         select: TSelect
         from: TFrom
         where?: WhereClause<ExtractSelect<TFrom>>
-        order?: OrderClause<TFrom, keyof TSelect>
+        order?: OrderClause<TFrom>
         limit?: number
         offset?: number
       }
@@ -59,7 +59,7 @@ export const useDatabaseSuspenseQuery = <
         select: TSelect
         from: TFrom
         where?: WhereClause<ExtractSelect<TFrom>>
-        order?: OrderClause<TFrom, keyof TSelect>
+        order?: OrderClause<TFrom>
         limit?: number
         offset?: number
       }

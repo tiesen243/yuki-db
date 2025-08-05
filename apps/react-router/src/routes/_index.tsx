@@ -19,15 +19,10 @@ import { Trash2Icon } from '@yuki/ui/icons'
 import { Input } from '@yuki/ui/input'
 
 const queryOptions = createDatabaseQueryOptions({
-  select: {
-    id: true,
-    title: true,
-    content: true,
-    createdAt: true,
-  },
+  select: { id: true, title: true, content: true, createdAt: true },
   from: 'posts',
   where: {},
-  order: { createdAt: 'desc' },
+  order: { updatedAt: 'desc' },
 })
 
 export default function HomePage() {

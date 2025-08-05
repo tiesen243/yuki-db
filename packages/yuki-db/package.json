@@ -77,10 +77,11 @@
     "@yuki/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "tsdown": "^0.13.2",
+    "tsdown": "^0.13.3",
     "typescript": "catalog:"
   },
   "peerDependencies": {
+    "@prisma/client": "^6.13.0",
     "@tanstack/react-query": "^5.84.1",
     "drizzle-orm": "^0.44.4",
     "prisma": "^6.13.0"

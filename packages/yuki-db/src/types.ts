@@ -28,10 +28,9 @@ export type ExtractInsert<TFrom extends keyof ExtractTables> =
     ? ExtractTables[TFrom]['$inferInsert']
     : ExtractTables[TFrom]
 
-export type OrderClause<
-  TFrom extends keyof ExtractTables,
-  TField extends keyof ExtractSelect<TFrom>,
-> = Partial<Record<TField, 'asc' | 'desc'>>
+export type OrderClause<TFrom extends keyof ExtractTables> = Partial<
+  Record<keyof ExtractSelect<TFrom>, 'asc' | 'desc'>
+>
 
 export type SelectableColumns<TFrom extends keyof ExtractTables> = {
   [K in keyof ExtractSelect<TFrom>]?: boolean

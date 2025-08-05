@@ -733,10 +733,9 @@ export type SelectedData<TSelect, TFrom extends keyof ExtractTables> = {
 ### Order Clause Types
 
 ```typescript
-export type OrderClause<
-  TFrom extends keyof ExtractTables,
-  TField extends keyof ExtractSelect<TFrom>,
-> = Partial<Record<TField, 'asc' | 'desc'>>
+export type OrderClause<TFrom extends keyof ExtractTables> = Partial<
+  Record<keyof ExtractSelect<TFrom>, 'asc' | 'desc'>
+>
 ```
 
 ### Query Options Types
