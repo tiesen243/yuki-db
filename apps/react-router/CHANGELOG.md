@@ -1,5 +1,12 @@
 # @yuki/react-router
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [d520fc8]
+  - yuki-db@1.0.3
+
 ## 1.0.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # yuki-db
 
+## 1.0.3
+
+### Patch Changes
+
+- d520fc8: move client into root
+
 ## 1.0.2
 
 ### Patch Changes
