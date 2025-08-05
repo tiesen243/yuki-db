@@ -2,10 +2,9 @@ import 'yuki-db'
 
 import { createHandler } from 'yuki-db/drizzle'
 
-import { db } from '@yuki/db'
-import * as schema from '@yuki/db/schema'
-
 import type { Route } from './+types/api.db'
+import { db } from '@/server/db'
+import * as schema from '@/server/db/schema'
 
 const { GET, POST } = createHandler({ db, schema })
 

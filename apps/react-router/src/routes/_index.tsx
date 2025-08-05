@@ -26,16 +26,14 @@ const queryOptions = createDatabaseQueryOptions({
     createdAt: true,
   },
   from: 'posts',
-  where: {
-    title: { eq: 'dsaasdas' },
-  },
-  order: { title: 'asc' },
+  where: {},
+  order: { createdAt: 'desc' },
 })
 
 export default function HomePage() {
   const queryClient = useQueryClient()
 
-  const { data: posts, isLoading, error } = useDatabaseQuery(queryOptions)
+  const { data: posts = [], isLoading, error } = useDatabaseQuery(queryOptions)
 
   const { mutate: create, isPending: isCreating } = useDatabaseMutation(
     {
@@ -60,7 +58,7 @@ export default function HomePage() {
   return (
     <main className='container'>
       <p>Is loading: {isLoading ? 'true' : 'false'}</p>
-      <p>Error: {error ? error.message : 'No error'}</p>
+      <p>Error: {error ? JSON.stringify(error) : 'No error'}</p>
 
       <form
         className='grid gap-4'
@@ -89,9 +87,11 @@ export default function HomePage() {
       </form>
 
       <div className='mt-4 grid grid-cols-3 gap-4'>
-        {posts?.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+        {isLoading
+          ? Array.from({ length: 3 }, (_, index) => (
+              <PostCardSkeleton key={index} />
+            ))
+          : posts.map((post) => <PostCard key={post.id} post={post} />)}
       </div>
     </main>
   )
@@ -144,3 +144,24 @@ const PostCard: React.FC<{
     </Card>
   )
 }
+
+const PostCardSkeleton: React.FC = () => (
+  <Card>
+    <CardHeader>
+      <CardTitle className='w-1/2 animate-pulse rounded-md bg-current'>
+        &nbsp;
+      </CardTitle>
+      <CardDescription className='w-1/3 animate-pulse rounded-md bg-current'>
+        &nbsp;
+      </CardDescription>
+      <CardAction>
+        <Button variant='ghost' size='icon' disabled>
+          <Trash2Icon />
+        </Button>
+      </CardAction>
+    </CardHeader>
+    <CardContent>
+      <p className='h-20 w-full animate-pulse rounded-md bg-current' />
+    </CardContent>
+  </Card>
+)

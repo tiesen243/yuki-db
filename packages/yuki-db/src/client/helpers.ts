@@ -56,19 +56,8 @@ export const createDatabaseQueryOptions = <
         throw new Error(
           `Failed to fetch data from database: ${response.statusText}`,
         )
-      const json = (await response.json()) as TData[]
-      return json.map((item) => {
-        const newItem: Record<string, unknown> = {}
-        for (const key in item) {
-          const stringValue = String(item[key] ?? '')
-          if (!isNaN(Date.parse(stringValue)))
-            newItem[key] = new Date(stringValue)
-          else if (!isNaN(Number(stringValue)) && stringValue.trim() !== '')
-            newItem[key] = Number(stringValue)
-          else newItem[key] = stringValue
-        }
-        return newItem as TData
-      })
+      const json = (await response.json()) as Record<string, string>[]
+      return json.map((item) => parseJson(item)) as TData[]
     },
   }
 }
@@ -131,4 +120,30 @@ export const createDatabaseMutationOptions = <
         )
     },
   }
+}
+
+function parseJson(data: Record<string, string>): Record<string, unknown> {
+  const isDate = (value: string) => {
+    const date = new Date(value)
+    return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(value) // ISO-like format
+  }
+
+  const parsed: Record<string, unknown> = {}
+
+  for (const key in data) {
+    const value = data[key]
+
+    if (typeof value !== 'string') {
+      parsed[key] = value
+      continue
+    }
+
+    if (value === 'true') parsed[key] = true
+    else if (value === 'false') parsed[key] = false
+    else if (!isNaN(Number(value))) parsed[key] = Number(value)
+    else if (isDate(value)) parsed[key] = new Date(value)
+    else parsed[key] = value
+  }
+
+  return parsed
 }

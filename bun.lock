@@ -13,7 +13,7 @@
     },
     "apps/react-router": {
       "name": "@yuki/react-router",
-      "version": "1.0.0",
+      "version": "1.0.4",
       "dependencies": {
         "@react-router/fs-routes": "^7.7.1",
         "@react-router/node": "^7.7.1",
@@ -22,6 +22,7 @@
         "@yuki/db": "workspace:*",
         "@yuki/ui": "workspace:*",
         "@yuki/validators": "workspace:*",
+        "drizzle-orm": "^0.44.4",
         "isbot": "^5.1.29",
         "react": "catalog:react",
         "react-dom": "catalog:react",
@@ -38,6 +39,7 @@
         "@yuki/prettier-config": "workspace:*",
         "@yuki/tsconfig": "workspace:*",
         "dotenv-cli": "catalog:",
+        "drizzle-kit": "^0.31.4",
         "eslint": "catalog:",
         "prettier": "catalog:",
         "tailwindcss": "catalog:tailwind",
@@ -105,7 +107,7 @@
     },
     "packages/yuki-db": {
       "name": "yuki-db",
-      "version": "0.0.1",
+      "version": "1.0.4",
       "devDependencies": {
         "@yuki/eslint-config": "workspace:*",
         "@yuki/prettier-config": "workspace:*",
