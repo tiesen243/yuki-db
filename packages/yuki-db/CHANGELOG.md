@@ -1,5 +1,13 @@
 # yuki-db
 
+## 1.0.6
+
+### Patch Changes
+
+- 1c12e7d: prisma supported
+- 91020f2: update prisma document
+- c2b70f5: update README
+
 ## 1.0.5
 
 ### Patch Changes
