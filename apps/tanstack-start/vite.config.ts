@@ -12,8 +12,8 @@ export default defineConfig(({ mode }) => {
     server: { port: 3002 },
     define: { 'process.env': JSON.stringify(process.env) },
     plugins: [
-      tailwindcss(),
       react(),
+      tailwindcss(),
       tanstackStart({ customViteReactPlugin: true }),
       tsconfigPaths(),
     ],
