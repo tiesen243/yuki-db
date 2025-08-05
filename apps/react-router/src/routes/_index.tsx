@@ -19,14 +19,17 @@ import { Trash2Icon } from '@yuki/ui/icons'
 import { Input } from '@yuki/ui/input'
 
 const queryOptions = createDatabaseQueryOptions({
-  select: ['id', 'title', 'content', 'createdAt'],
+  select: {
+    id: true,
+    title: true,
+    content: true,
+    createdAt: true,
+  },
   from: 'posts',
   where: {
-    title: {},
+    title: { eq: 'dsaasdas' },
   },
-  order: {
-    createdAt: 'desc',
-  },
+  order: { title: 'asc' },
 })
 
 export default function HomePage() {
@@ -34,18 +37,20 @@ export default function HomePage() {
 
   const { data: posts, isLoading, error } = useDatabaseQuery(queryOptions)
 
-  const { mutate: create, isPending: isCreating } = useDatabaseMutation({
-    action: 'insert',
-    table: 'posts',
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryOptions.queryKey,
-      })
+  const { mutate: create, isPending: isCreating } = useDatabaseMutation(
+    {
+      action: 'insert',
+      table: 'posts',
     },
-    onError: (error) => {
-      console.error('Error creating post:', error)
+    {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: queryOptions.queryKey })
+      },
+      onError: (error) => {
+        console.error('Error creating post:', error)
+      },
     },
-  })
+  )
 
   const [formData, setFormData] = React.useState({
     title: '',
@@ -97,18 +102,22 @@ const PostCard: React.FC<{
 }> = ({ post }) => {
   const queryClient = useQueryClient()
 
-  const { mutate: remove, isPending: isRemoving } = useDatabaseMutation({
-    action: 'delete',
-    table: 'posts',
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryOptions.queryKey,
-      })
+  const { mutate: remove, isPending: isRemoving } = useDatabaseMutation(
+    {
+      action: 'delete',
+      table: 'posts',
     },
-    onError: (error) => {
-      console.error('Error removing post:', error)
+    {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: queryOptions.queryKey,
+        })
+      },
+      onError: (error) => {
+        console.error('Error removing post:', error)
+      },
     },
-  })
+  )
 
   return (
     <Card>

@@ -15,26 +15,30 @@ export type WhereClause<TSchema> = {
   NOT?: WhereClause<TSchema>
 }
 
-export type OrderClause<TSelect> = Partial<
-  Record<TSelect[number], 'asc' | 'desc'>
->
+// @ts-expect-error - schema will be registered by the user
+export type ExtractTables = Database['schema']
 
-export type SelectableColumns<TFrom> =
-  (keyof (Database['schema'][TFrom] extends {
-    $inferSelect: unknown
-  }
-    ? // @ts-expect-error - schema will be registered by the user
-      Database['schema'][TFrom]['$inferSelect']
-    : // @ts-expect-error - schema will be registered by the user
-      Database['schema'][TFrom]))[]
+export type ExtractSelect<TFrom extends keyof ExtractTables> =
+  ExtractTables[TFrom] extends { $inferSelect: unknown }
+    ? ExtractTables[TFrom]['$inferSelect']
+    : ExtractTables[TFrom]
 
-export type SelectedData<TSelect, TFrom> = {
-  // @ts-expect-error - schema will be registered by the user
-  [K in TSelect[number]]: (Database['schema'][TFrom] extends {
-    $inferSelect: unknown
-  }
-    ? // @ts-expect-error - schema will be registered by the user
-      Database['schema'][TFrom]['$inferSelect']
-    : // @ts-expect-error - schema will be registered by the user
-      Database['schema'][TFrom])[K]
+export type ExtractInsert<TFrom extends keyof ExtractTables> =
+  ExtractTables[TFrom] extends { $inferInsert: unknown }
+    ? ExtractTables[TFrom]['$inferInsert']
+    : ExtractTables[TFrom]
+
+export type OrderClause<
+  TFrom extends keyof ExtractTables,
+  TField extends keyof ExtractSelect<TFrom>,
+> = Partial<Record<TField, 'asc' | 'desc'>>
+
+export type SelectableColumns<TFrom extends keyof ExtractTables> = {
+  [K in keyof ExtractSelect<TFrom>]?: boolean
+}
+
+export type SelectedData<TSelect, TFrom extends keyof ExtractTables> = {
+  [K in keyof TSelect as TSelect[K] extends true
+    ? K
+    : never]: ExtractSelect<TFrom>[K]
 }

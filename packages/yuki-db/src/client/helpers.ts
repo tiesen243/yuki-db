@@ -1,5 +1,8 @@
 import type {
-  Database,
+  ActionType,
+  ExtractInsert,
+  ExtractSelect,
+  ExtractTables,
   OrderClause,
   SelectableColumns,
   SelectedData,
@@ -7,24 +10,26 @@ import type {
 } from '../types'
 
 export const createDatabaseQueryOptions = <
-  // @ts-expect-error - schema will be registered by the user
-  TFrom extends keyof Database['schema'],
+  TFrom extends keyof ExtractTables,
   TSelect extends SelectableColumns<TFrom>,
   TData = SelectedData<TSelect, TFrom>,
 >(options: {
   select: TSelect
   from: TFrom
-  // @ts-expect-error - schema will be registered by the user
-  where?: WhereClause<Database['schema'][TFrom]['$inferSelect']>
-  order?: OrderClause<TSelect>
+  where?: WhereClause<ExtractSelect<TFrom>>
+  order?: OrderClause<TFrom, keyof TSelect>
   limit?: number
   offset?: number
 }): {
   queryKey: string[]
   queryFn: () => Promise<TData[]>
 } => {
+  const selectedColumns = Object.entries(options.select)
+    .filter(([, value]) => value)
+    .map(([key]) => key)
+
   const searchParams = new URLSearchParams()
-  searchParams.set('select', options.select.join(','))
+  searchParams.set('select', selectedColumns.join(','))
   searchParams.set('from', String(options.from))
   if (options.where) searchParams.set('where', JSON.stringify(options.where))
   if (options.order) searchParams.set('order', JSON.stringify(options.order))
@@ -33,7 +38,7 @@ export const createDatabaseQueryOptions = <
 
   const dependencies: string[] = [
     String(options.from),
-    ...options.select.map(String),
+    ...selectedColumns.map(String),
     ...(options.where ? [JSON.stringify(options.where)] : []),
     ...(options.order ? [JSON.stringify(options.order)] : []),
     ...(options.limit ? [String(options.limit)] : []),
@@ -64,6 +69,66 @@ export const createDatabaseQueryOptions = <
         }
         return newItem as TData
       })
+    },
+  }
+}
+
+export const createDatabaseMutationOptions = <
+  TAction extends ActionType,
+  TTable extends keyof ExtractTables,
+>(options: {
+  action: TAction
+  table: TTable
+}): {
+  mutationKey: string[]
+  mutationFn: <TValues extends ExtractInsert<TTable>>(
+    data: TAction extends 'insert'
+      ? TValues
+      : TAction extends 'update'
+        ? {
+            where: WhereClause<ExtractSelect<TTable>>
+            data: TValues
+          }
+        : WhereClause<ExtractSelect<TTable>>,
+  ) => Promise<void>
+} => {
+  const mutationKey = ['db', options.action, String(options.table)]
+
+  return {
+    mutationKey,
+    mutationFn: async <TValues extends ExtractInsert<TTable>>(
+      data: TAction extends 'insert'
+        ? TValues
+        : TAction extends 'update'
+          ? {
+              where: WhereClause<ExtractSelect<TTable>>
+              data: TValues
+            }
+          : WhereClause<ExtractSelect<TTable>>,
+    ) => {
+      const searchParams = new URLSearchParams()
+      searchParams.set('action', options.action)
+      searchParams.set('table', String(options.table))
+
+      if (options.action === 'update')
+        searchParams.set('where', JSON.stringify(data.where))
+      else if (options.action === 'delete')
+        searchParams.set('where', JSON.stringify(data))
+
+      const response = await fetch(`/api/db?${searchParams.toString()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:
+          options.action === 'insert'
+            ? JSON.stringify(data)
+            : options.action === 'update'
+              ? JSON.stringify(data.data)
+              : JSON.stringify({}),
+      })
+      if (!response.ok)
+        throw new Error(
+          `Failed to perform database action: ${response.statusText}`,
+        )
     },
   }
 }

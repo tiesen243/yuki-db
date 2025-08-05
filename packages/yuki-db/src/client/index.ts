@@ -1,18 +1,30 @@
-import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import type {
+  UseMutationOptions,
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult,
+  UseSuspenseQueryOptions,
+  UseSuspenseQueryResult,
+} from '@tanstack/react-query'
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 
 import type {
   ActionType,
-  Database,
+  ExtractInsert,
+  ExtractSelect,
+  ExtractTables,
   OrderClause,
   SelectableColumns,
   SelectedData,
+  WhereClause,
 } from '../types'
-import { createDatabaseQueryOptions } from './helpers'
+import {
+  createDatabaseMutationOptions,
+  createDatabaseQueryOptions,
+} from './helpers'
 
 export const useDatabaseQuery = <
-  // @ts-expect-error - schema will be registered by the user
-  TFrom extends keyof Database['schema'],
+  TFrom extends keyof ExtractTables,
   TSelect extends SelectableColumns<TFrom>,
   TData = SelectedData<TSelect, TFrom>,
 >(
@@ -20,80 +32,92 @@ export const useDatabaseQuery = <
     | {
         select: TSelect
         from: TFrom
-        // @ts-expect-error - schema will be registered by the user
-        where?: WhereClause<Database['schema'][TFrom]['$inferSelect']>
-        order?: OrderClause<TSelect>
+        where?: WhereClause<ExtractSelect<TFrom>>
+        order?: OrderClause<TFrom, keyof TSelect>
+        limit?: number
+        offset?: number
       }
     | ReturnType<typeof createDatabaseQueryOptions<TFrom, TSelect, TData>>,
+  queryOptions?: Omit<UseQueryOptions<TData[]>, 'queryKey' | 'queryFn'>,
 ): UseQueryResult<TData[]> => {
   if (typeof options === 'object' && 'select' in options && 'from' in options)
     options = createDatabaseQueryOptions(options)
-  return useQuery<TData[]>(options)
+
+  return useQuery<TData[]>({
+    ...options,
+    ...queryOptions,
+  })
+}
+
+export const useDatabaseSuspenseQuery = <
+  TFrom extends keyof ExtractTables,
+  TSelect extends SelectableColumns<TFrom>,
+  TData = SelectedData<TSelect, TFrom>,
+>(
+  options:
+    | {
+        select: TSelect
+        from: TFrom
+        where?: WhereClause<ExtractSelect<TFrom>>
+        order?: OrderClause<TFrom, keyof TSelect>
+        limit?: number
+        offset?: number
+      }
+    | ReturnType<typeof createDatabaseQueryOptions<TFrom, TSelect, TData>>,
+  queryOptions?: Omit<UseSuspenseQueryOptions<TData[]>, 'queryKey' | 'queryFn'>,
+): UseSuspenseQueryResult<TData[]> => {
+  if (typeof options === 'object' && 'select' in options && 'from' in options)
+    options = createDatabaseQueryOptions(options)
+
+  return useSuspenseQuery<TData[]>({
+    ...options,
+    ...queryOptions,
+  })
 }
 
 export const useDatabaseMutation = <
   TAction extends ActionType,
-  // @ts-expect-error - schema will be registered by the user
-  TTable extends keyof Database['schema'],
-  // @ts-expect-error - schema will be registered by the user
-  TValues extends Database['schema'][TTable]['$inferInsert'],
->(options: {
-  action: TAction
-  table: TTable
-  onSuccess?: () => void | Promise<void>
-  onError?: (error: Error) => void | Promise<void>
-}): UseMutationResult<
+  TTable extends keyof ExtractTables,
+  TValues extends ExtractInsert<TTable>,
+>(
+  options:
+    | {
+        action: TAction
+        table: TTable
+      }
+    | ReturnType<typeof createDatabaseMutationOptions<TAction, TTable>>,
+  mutationOptions?: Omit<
+    UseMutationOptions<
+      void,
+      Error,
+      TAction extends 'insert'
+        ? TValues
+        : TAction extends 'update'
+          ? {
+              where: WhereClause<ExtractSelect<TTable>>
+              data: TValues
+            }
+          : WhereClause<ExtractSelect<TTable>>
+    >,
+    'mutationKey' | 'mutationFn'
+  >,
+): UseMutationResult<
   void,
   Error,
   TAction extends 'insert'
     ? TValues
     : TAction extends 'update'
       ? {
-          // @ts-expect-error - schema will be registered by the user
-          where: WhereClause<Database['schema'][TTable]['$inferSelect']>
+          where: WhereClause<ExtractSelect<TTable>>
           data: TValues
         }
-      : // @ts-expect-error - schema will be registered by the user
-        WhereClause<Database['schema'][TTable]['$inferSelect']>
-> =>
-  useMutation({
-    mutationKey: ['db', options.action, options.table],
-    mutationFn: async (
-      data: TAction extends 'insert'
-        ? TValues
-        : TAction extends 'update'
-          ? {
-              // @ts-expect-error - schema will be registered by the user
-              where: WhereClause<Database['schema'][TTable]['$inferSelect']>
-              data: TValues
-            }
-          : // @ts-expect-error - schema will be registered by the user
-            WhereClause<Database['schema'][TTable]['$inferSelect']>,
-    ) => {
-      const searchParams = new URLSearchParams()
-      searchParams.set('action', options.action)
-      searchParams.set('table', String(options.table))
+      : WhereClause<ExtractSelect<TTable>>
+> => {
+  if (typeof options === 'object' && 'action' in options && 'table' in options)
+    options = createDatabaseMutationOptions(options)
 
-      if (options.action === 'update')
-        searchParams.set('where', JSON.stringify(data.where))
-      else if (options.action === 'delete')
-        searchParams.set('where', JSON.stringify(data))
-
-      const response = await fetch(`/api/db?${searchParams.toString()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:
-          options.action === 'insert'
-            ? JSON.stringify(data)
-            : options.action === 'update'
-              ? JSON.stringify(data.data)
-              : JSON.stringify({}),
-      })
-      if (!response.ok)
-        throw new Error(
-          `Failed to perform database action: ${response.statusText}`,
-        )
-    },
-    onSuccess: options.onSuccess,
-    onError: options.onError,
+  return useMutation({
+    ...options,
+    ...mutationOptions,
   })
+}
