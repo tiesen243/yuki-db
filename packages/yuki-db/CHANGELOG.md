@@ -1,5 +1,13 @@
 # yuki-db
 
+## 1.0.4
+
+### Patch Changes
+
+- ca0af33: using object for select instead of array
+- ca0af33: add createMutationDatabaseOptions
+- ca0af33: add useDatabaseSuspenseQuery hooks
+
 ## 1.0.3
 
 ### Patch Changes
