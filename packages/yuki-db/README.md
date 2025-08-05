@@ -139,7 +139,12 @@ declare module 'yuki-db/drizzle' {
 // src/lib/db.ts
 import { createHandler } from 'yuki-db/prisma'
 
-import type { PostCreateInput, PostModel } from '@/path/to/generated/models'
+import type {
+  PostCreateInput,
+  PostModel,
+  UserCreateInput,
+  UserModel,
+} from '@/path/to/generated/models'
 import { db } from '@/server/db'
 
 export const { GET, POST } = createHandler({ db })
@@ -151,6 +156,10 @@ declare module 'yuki-db/prisma' {
       post: {
         $inferSelect: PostModel
         $inferInsert: PostCreateInput
+      }
+      user: {
+        $inferSelect: UserModel
+        $inferInsert: UserCreateInput
       }
     }
   }
@@ -315,7 +324,7 @@ const { data: filteredPosts } = useDatabaseQuery({
   from: 'posts',
   where: {
     OR: [{ title: { like: '%typescript%' } }, { content: { like: '%react%' } }],
-    AND: [{ createdAt: { gte: new Date('2024-01-01') } }],
+    // AND: [{ createdAt: { gte: new Date('2024-01-01') } }],
   },
   order: {
     createdAt: 'desc',
@@ -442,7 +451,7 @@ function EditPostForm({ postId }: { postId: number }) {
 
   const handleUpdate = (updates: { title?: string; content?: string }) => {
     updatePost({
-      where: { id: { eq: postId } },
+      where: { id: postId },
       data: updates,
     })
   }
@@ -483,7 +492,7 @@ function DeletePostButton({ postId }: { postId: number }) {
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this post?'))
-      deletePost({ id: { eq: postId } })
+      deletePost({ id: postId })
   }
 
   return (
@@ -553,7 +562,33 @@ function PostDetail({ id }: { id: number }) {
 }
 ```
 
-### Invalidating
+### Suspense Queries
+
+For better loading states, you can use `useDatabaseSuspenseQuery` which throws an error if the query is not yet resolved, allowing you to use React's Suspense for loading states:
+
+```tsx
+import { useDatabaseSuspenseQuery } from 'yuki-db'
+
+// Server side
+export default function Page() {
+  const queryClient = new QueryClient()
+  queryClient.prefetchQuery(postQueries.all())
+
+  return (
+    <Suspense fallback={<div>Loading posts...</div>}>
+      <PostsList />
+    </Suspense>
+  )
+}
+
+// Client side
+function PostsList() {
+  const posts = useDatabaseSuspenseQuery(postQueries.all())
+  return <div>...</div>
+}
+```
+
+### Invalidating Queries
 
 Use `invalidateQueries` to refresh data after mutations:
 
@@ -609,6 +644,13 @@ import { createHandler } from 'yuki-db/prisma'
 const { GET, POST } = createHandler({
   db: prismaInstance,
 })
+
+**Parameters:**
+- `db`: Your Prisma database instance
+
+**Returns:**
+- `GET`: Handler for query operations
+- `POST`: Handler for mutation operations
 ```
 
 ### Client Hooks
@@ -618,8 +660,6 @@ const { GET, POST } = createHandler({
 Hook for fetching data with automatic caching and background updates.
 
 ```typescript
-const a = 1
-
 const result = useDatabaseQuery(
   {
     select: {
@@ -724,6 +764,10 @@ export type WhereClause<TSchema> = {
   AND?: WhereClause<TSchema>
   NOT?: WhereClause<TSchema>
 }
+
+export type UpdateWhereClause<TTable extends keyof ExtractTables> = Partial<{
+  [K in keyof ExtractTables[TTable]['$inferSelect']]: ExtractTables[TTable]['$inferSelect'][K]
+}>
 ```
 
 ### Schema Types
