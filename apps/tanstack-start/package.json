@@ -6,6 +6,9 @@
   "scripts": {
     "build": "bun run with-env vite build",
     "clean": "git clean -xdf .cache .nitro .output .tanstack .turbo node_modules",
+    "db:generate": "bun run with-env prisma generate",
+    "db:push": "bun run with-env prisma db push",
+    "db:studio": "bun run with-env prisma studio",
     "dev": "bun run with-env vite dev",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
@@ -33,6 +36,7 @@
     "dotenv-cli": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
+    "prisma": "^6.13.0",
     "tailwindcss": "catalog:tailwind",
     "typescript": "catalog:",
     "vite": "^7.0.6",

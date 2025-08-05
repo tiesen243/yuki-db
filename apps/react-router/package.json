@@ -6,6 +6,8 @@
   "scripts": {
     "build": "bun run with-env react-router build",
     "clean": "git clean -xdf .cache .react-router .turbo .vercel build node_modules",
+    "db:push": "bun run with-env drizzle-kit push",
+    "db:studio": "bun run with-env drizzle-kit studio",
     "dev": "bun run with-env react-router dev",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "bun run with-env react-router typegen && eslint",
