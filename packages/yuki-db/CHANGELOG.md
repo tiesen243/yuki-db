@@ -1,5 +1,12 @@
 # yuki-db
 
+## 1.0.5
+
+### Patch Changes
+
+- e391ca5: update parseJson function
+- cf0a532: update README
+
 ## 1.0.4
 
 ### Patch Changes
