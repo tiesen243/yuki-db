@@ -19,8 +19,15 @@ import {
 
 import type { ActionType, Database } from '../types'
 
+/**
+ * Creates a database handler with GET and POST methods for database operations
+ * @param {Database} options - Database configuration object
+ * @param {unknown} options.db - The database connection instance
+ * @param {Record<string, unknown>} options.schema - The database schema definition
+ * @returns {Object} Handler object with GET and POST methods
+ */
 // @ts-expect-error - db, schema are injected at build time
-export function createHandler({ db, schema }: Database) {
+export function createHandler({ db, schema }: Database): object {
   function buildWhereCondition(
     whereObj: Record<string, unknown>,
     tableSchema: Record<string, unknown>,
@@ -79,7 +86,24 @@ export function createHandler({ db, schema }: Database) {
   }
 
   return {
-    GET: async (request: Request) => {
+    /**
+     * Handles GET requests for querying database records
+     * @param {Request} request - The HTTP request object
+     * @returns {Promise<Response>} JSON response with query results or error message
+     *
+     * @description
+     * Supports the following query parameters:
+     * - select: Comma-separated list of fields to select (required)
+     * - from: Table name to query from (required)
+     * - where: JSON string representing WHERE conditions (optional)
+     * - orderBy: JSON object with field names and 'asc'/'desc' values (optional)
+     * - limit: Maximum number of records to return (optional)
+     * - offset: Number of records to skip (optional)
+     *
+     * @example
+     * GET /api?select=id,name&from=users&where={"age":{"gt":18}}&orderBy={"name":"asc"}&limit=10
+     */
+    GET: async (request: Request): Promise<Response> => {
       const url = new URL(request.url)
       const select = url.searchParams.get('select')?.split(',')
       const from = url.searchParams.get('from')
@@ -170,7 +194,28 @@ export function createHandler({ db, schema }: Database) {
       }
     },
 
-    POST: async (request: Request) => {
+    /**
+     * Handles POST requests for database write operations (insert, update, delete)
+     * @param {Request} request - The HTTP request object with JSON body containing data
+     * @returns {Promise<Response>} Success or error response
+     *
+     * @description
+     * Supports the following operations via query parameters:
+     * - action: 'insert', 'update', or 'delete' (required)
+     * - table: Table name to operate on (required)
+     * - where: JSON string for update/delete conditions (required for update/delete)
+     *
+     * Request body should contain the data for insert/update operations.
+     *
+     * @example
+     * POST /api?action=insert&table=users
+     * Body: { "name": "John", "age": 25 }
+     *
+     * @example
+     * POST /api?action=update&table=users&where={"id":{"eq":1}}
+     * Body: { "name": "Jane" }
+     */
+    POST: async (request: Request): Promise<Response> => {
       const url = new URL(request.url)
       const action = url.searchParams.get('action') as ActionType
       const table = url.searchParams.get('table')

@@ -8,6 +8,31 @@ import type {
   WhereClause,
 } from '../types'
 
+/**
+ * Creates query options for database read operations compatible with query libraries like React Query
+ * @template TFrom - The table name type from the database schema
+ * @template TSelect - The selectable columns type for the specified table
+ * @template TData - The resulting data type after selection
+ * @param {Object} options - Query configuration options
+ * @param {TSelect} options.select - Object specifying which columns to select (true/false for each column)
+ * @param {TFrom} options.from - The table name to query from
+ * @param {WhereClause<ExtractTables[TFrom]['$inferSelect']>} [options.where] - Optional WHERE conditions
+ * @param {OrderClause<TFrom>} [options.orderBy] - Optional ORDER BY clause
+ * @param {number} [options.limit] - Optional limit for number of results
+ * @param {number} [options.offset] - Optional offset for pagination
+ * @returns {Object} Object containing queryKey and queryFn for use with query libraries
+ * @returns {string[]} returns.queryKey - Unique key array for caching the query
+ * @returns {() => Promise<TData[]>} returns.queryFn - Async function that executes the database query
+ *
+ * @example
+ * const userQuery = createDatabaseQueryOptions({
+ *   select: { id: true, name: true, email: false },
+ *   from: 'users',
+ *   where: { age: { gt: 18 } },
+ *   orderBy: { name: 'asc' },
+ *   limit: 10
+ * })
+ */
 export const createDatabaseQueryOptions = <
   TFrom extends keyof ExtractTables,
   TSelect extends SelectableColumns<TFrom>,
@@ -16,7 +41,7 @@ export const createDatabaseQueryOptions = <
   select: TSelect
   from: TFrom
   where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
-  orderBy?: OrderClause<TFrom>
+  orderBy?: OrderClause<TFrom, keyof TSelect>
   limit?: number
   offset?: number
 }): {
@@ -69,6 +94,44 @@ export const createDatabaseQueryOptions = <
   }
 }
 
+/**
+ * Creates mutation options for database write operations (insert, update, delete)
+ * @template TAction - The action type ('insert' | 'update' | 'delete')
+ * @template TTable - The table name type from the database schema
+ * @param {Object} options - Mutation configuration options
+ * @param {TAction} options.action - The type of database action to perform
+ * @param {TTable} options.table - The table name to perform the action on
+ * @returns {Object} Object containing mutationKey and mutationFn for use with mutation libraries
+ * @returns {string[]} returns.mutationKey - Unique key array for the mutation
+ * @returns {Function} returns.mutationFn - Function that executes the database mutation
+ *
+ * @example
+ * // Insert mutation
+ * const insertUser = createDatabaseMutationOptions({
+ *   action: 'insert',
+ *   table: 'users'
+ * })
+ * await insertUser.mutate({ name: 'John', email: 'john@example.com' })
+ *
+ * @example
+ * // Update mutation
+ * const updateUser = createDatabaseMutationOptions({
+ *   action: 'update',
+ *   table: 'users'
+ * })
+ * await updateUser.mutate({
+ *   where: { id: 1 },
+ *   data: { name: 'Jane' }
+ * })
+ *
+ * @example
+ * // Delete mutation
+ * const deleteUser = createDatabaseMutationOptions({
+ *   action: 'delete',
+ *   table: 'users'
+ * })
+ * await deleteUser.mutate({ id: 1 })
+ */
 export const createDatabaseMutationOptions = <
   TAction extends ActionType,
   TTable extends keyof ExtractTables,
@@ -128,6 +191,27 @@ export const createDatabaseMutationOptions = <
   }
 }
 
+/**
+ * Parses a record of string values into their appropriate JavaScript types
+ * @param {Record<string, string>} data - Object with string values to be parsed
+ * @returns {Record<string, unknown>} Object with values converted to appropriate types
+ *
+ * @description
+ * Converts string values to:
+ * - Boolean: 'true' → true, 'false' → false
+ * - Number: Valid numeric strings → Number
+ * - Date: ISO-like date strings (YYYY-MM-DD format) → Date objects
+ * - String: Everything else remains as string
+ *
+ * @example
+ * parseJson({
+ *   id: '123',
+ *   active: 'true',
+ *   createdAt: '2023-01-01T00:00:00Z',
+ *   name: 'John'
+ * })
+ * // Returns: { id: 123, active: true, createdAt: Date, name: 'John' }
+ */
 function parseJson(data: Record<string, string>): Record<string, unknown> {
   const isDate = (value: string) => {
     const date = new Date(value)
