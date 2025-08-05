@@ -19,8 +19,6 @@ import {
 
 import type { ActionType, Database } from '../types'
 
-export type { Database } from '../types'
-
 // @ts-expect-error - db, schema are injected at build time
 export function createHandler({ db, schema }: Database) {
   function buildWhereCondition(
@@ -214,3 +212,5 @@ export function createHandler({ db, schema }: Database) {
     },
   }
 }
+
+export type { Database } from '../types'

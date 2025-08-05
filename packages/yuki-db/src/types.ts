@@ -18,26 +18,16 @@ export type WhereClause<TSchema> = {
 // @ts-expect-error - schema will be registered by the user
 export type ExtractTables = Database['schema']
 
-export type ExtractSelect<TFrom extends keyof ExtractTables> =
-  ExtractTables[TFrom] extends { $inferSelect: unknown }
-    ? ExtractTables[TFrom]['$inferSelect']
-    : ExtractTables[TFrom]
-
-export type ExtractInsert<TFrom extends keyof ExtractTables> =
-  ExtractTables[TFrom] extends { $inferInsert: unknown }
-    ? ExtractTables[TFrom]['$inferInsert']
-    : ExtractTables[TFrom]
-
 export type OrderClause<TFrom extends keyof ExtractTables> = Partial<
-  Record<keyof ExtractSelect<TFrom>, 'asc' | 'desc'>
+  Record<keyof ExtractTables[TFrom]['$inferSelect'], 'asc' | 'desc'>
 >
 
 export type SelectableColumns<TFrom extends keyof ExtractTables> = {
-  [K in keyof ExtractSelect<TFrom>]?: boolean
+  [K in keyof ExtractTables[TFrom]['$inferSelect']]?: boolean
 }
 
 export type SelectedData<TSelect, TFrom extends keyof ExtractTables> = {
   [K in keyof TSelect as TSelect[K] extends true
     ? K
-    : never]: ExtractSelect<TFrom>[K]
+    : never]: ExtractTables[TFrom]['$inferSelect'][K]
 }

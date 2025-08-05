@@ -1,7 +1,5 @@
 import type {
   ActionType,
-  ExtractInsert,
-  ExtractSelect,
   ExtractTables,
   OrderClause,
   SelectableColumns,
@@ -16,7 +14,7 @@ export const createDatabaseQueryOptions = <
 >(options: {
   select: TSelect
   from: TFrom
-  where?: WhereClause<ExtractSelect<TFrom>>
+  where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
   order?: OrderClause<TFrom>
   limit?: number
   offset?: number
@@ -70,30 +68,30 @@ export const createDatabaseMutationOptions = <
   table: TTable
 }): {
   mutationKey: string[]
-  mutationFn: <TValues extends ExtractInsert<TTable>>(
+  mutationFn: <TValues extends ExtractTables[TTable]['$inferInsert']>(
     data: TAction extends 'insert'
       ? TValues
       : TAction extends 'update'
         ? {
-            where: WhereClause<ExtractSelect<TTable>>
-            data: TValues
+            where: WhereClause<ExtractTables[TTable]['$inferSelect']>
+            data: Partial<TValues>
           }
-        : WhereClause<ExtractSelect<TTable>>,
+        : WhereClause<ExtractTables[TTable]['$inferSelect']>,
   ) => Promise<void>
 } => {
   const mutationKey = ['db', options.action, String(options.table)]
 
   return {
     mutationKey,
-    mutationFn: async <TValues extends ExtractInsert<TTable>>(
+    mutationFn: async <TValues extends ExtractTables[TTable]['$inferInsert']>(
       data: TAction extends 'insert'
         ? TValues
         : TAction extends 'update'
           ? {
-              where: WhereClause<ExtractSelect<TTable>>
-              data: TValues
+              where: WhereClause<ExtractTables[TTable]['$inferSelect']>
+              data: Partial<TValues>
             }
-          : WhereClause<ExtractSelect<TTable>>,
+          : WhereClause<ExtractTables[TTable]['$inferSelect']>,
     ) => {
       const searchParams = new URLSearchParams()
       searchParams.set('action', options.action)

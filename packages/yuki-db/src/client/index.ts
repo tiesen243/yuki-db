@@ -10,8 +10,6 @@ import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 
 import type {
   ActionType,
-  ExtractInsert,
-  ExtractSelect,
   ExtractTables,
   OrderClause,
   SelectableColumns,
@@ -32,7 +30,7 @@ export const useDatabaseQuery = <
     | {
         select: TSelect
         from: TFrom
-        where?: WhereClause<ExtractSelect<TFrom>>
+        where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
         order?: OrderClause<TFrom>
         limit?: number
         offset?: number
@@ -58,7 +56,7 @@ export const useDatabaseSuspenseQuery = <
     | {
         select: TSelect
         from: TFrom
-        where?: WhereClause<ExtractSelect<TFrom>>
+        where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
         order?: OrderClause<TFrom>
         limit?: number
         offset?: number
@@ -78,7 +76,7 @@ export const useDatabaseSuspenseQuery = <
 export const useDatabaseMutation = <
   TAction extends ActionType,
   TTable extends keyof ExtractTables,
-  TValues extends ExtractInsert<TTable>,
+  TValues extends ExtractTables[TTable]['$inferInsert'],
 >(
   options:
     | {
@@ -94,10 +92,10 @@ export const useDatabaseMutation = <
         ? TValues
         : TAction extends 'update'
           ? {
-              where: WhereClause<ExtractSelect<TTable>>
-              data: TValues
+              where: WhereClause<ExtractTables[TTable]['$inferSelect']>
+              data: Partial<TValues>
             }
-          : WhereClause<ExtractSelect<TTable>>
+          : WhereClause<ExtractTables[TTable]['$inferSelect']>
     >,
     'mutationKey' | 'mutationFn'
   >,
@@ -108,10 +106,10 @@ export const useDatabaseMutation = <
     ? TValues
     : TAction extends 'update'
       ? {
-          where: WhereClause<ExtractSelect<TTable>>
-          data: TValues
+          where: WhereClause<ExtractTables[TTable]['$inferSelect']>
+          data: Partial<TValues>
         }
-      : WhereClause<ExtractSelect<TTable>>
+      : WhereClause<ExtractTables[TTable]['$inferSelect']>
 > => {
   if (typeof options === 'object' && 'action' in options && 'table' in options)
     options = createDatabaseMutationOptions(options)

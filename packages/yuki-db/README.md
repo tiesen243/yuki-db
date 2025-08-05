@@ -59,7 +59,7 @@ export const users = pgTable('users', {
 generator client {
   provider        = "prisma-client"
   previewFeatures = ["driverAdapters"]
-  output          = "../generated/prisma"
+  output          = "../src/server/db/generated"
 }
 
 datasource db {
@@ -134,6 +134,28 @@ declare module 'yuki-db/drizzle' {
 ```
 
 **Prisma Example:** (coming soon)
+
+```typescript
+// src/lib/db.ts
+import { createHandler } from 'yuki-db/prisma'
+
+import type { PostCreateInput, PostModel } from '@/path/to/generated/models'
+import { db } from '@/server/db'
+
+export const { GET, POST } = createHandler({ db })
+
+declare module 'yuki-db/prisma' {
+  interface Database {
+    db: typeof db
+    schema: {
+      post: {
+        $inferSelect: PostModel
+        $inferInsert: PostCreateInput
+      }
+    }
+  }
+}
+```
 
 ### 4. Framework Integration
 
@@ -709,24 +731,14 @@ export type WhereClause<TSchema> = {
 ```typescript
 export type ExtractTables = Database['schema']
 
-export type ExtractSelect<TFrom extends keyof ExtractTables> =
-  ExtractTables[TFrom] extends { $inferSelect: unknown }
-    ? ExtractTables[TFrom]['$inferSelect']
-    : ExtractTables[TFrom]
-
-export type ExtractInsert<TFrom extends keyof ExtractTables> =
-  ExtractTables[TFrom] extends { $inferInsert: unknown }
-    ? ExtractTables[TFrom]['$inferInsert']
-    : ExtractTables[TFrom]
-
 export type SelectableColumns<TFrom extends keyof ExtractTables> = {
-  [K in keyof ExtractSelect<TFrom>]?: boolean
+  [K in keyof ExtractTables[TFrom]['$inferSelect']]?: boolean
 }
 
 export type SelectedData<TSelect, TFrom extends keyof ExtractTables> = {
   [K in keyof TSelect as TSelect[K] extends true
     ? K
-    : never]: ExtractSelect<TFrom>[K]
+    : never]: ExtractTables[TFrom]['$inferSelect'][K]
 }
 ```
 
@@ -734,7 +746,7 @@ export type SelectedData<TSelect, TFrom extends keyof ExtractTables> = {
 
 ```typescript
 export type OrderClause<TFrom extends keyof ExtractTables> = Partial<
-  Record<keyof ExtractSelect<TFrom>, 'asc' | 'desc'>
+  Record<keyof ExtractTables[TFrom]['$inferSelect'], 'asc' | 'desc'>
 >
 ```
 
@@ -742,14 +754,14 @@ export type OrderClause<TFrom extends keyof ExtractTables> = Partial<
 
 ```typescript
 interface DatabaseQueryOptions<
-  TFrom,
-  TSelect,
+  TFrom extends keyof ExtractTables,
+  TSelect extends SelectableColumns<TFrom>,
   TData = SelectedData<TSelect, TFrom>,
 > {
   select: TSelect
   from: TFrom
-  where?: WhereClause<ExtractSelect<TFrom>>
-  order?: OrderClause<TFrom, keyof TSelect>
+  where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
+  order?: OrderClause<TFrom>
   limit?: number
   offset?: number
 }
@@ -758,10 +770,11 @@ interface DatabaseQueryOptions<
 ### Mutation Options Types
 
 ```typescript
+type ActionType = 'insert' | 'update' | 'delete'
+
 interface DatabaseMutationOptions<
   TAction extends ActionType,
   TTable extends keyof ExtractTables,
-  TValues extends ExtractInsert<TTable>,
 > {
   action: TAction
   table: TTable
