@@ -1,5 +1,7 @@
+import type { QueryClient } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import {
-  createRootRoute,
+  createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
@@ -10,8 +12,11 @@ import { ThemeProvider } from '@yuki/ui'
 // @ts-expect-error - globals.css is a CSS file, not a module
 import globalsCss from '@/globals.css?url'
 import { createMetadata } from '@/lib/metadata'
+import { createQueryClient } from '@/lib/query-client'
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient
+}>()({
   head: () => ({
     meta: createMetadata({ title: 'Tanstack Start' }),
     // prettier-ignore
@@ -25,9 +30,23 @@ export const Route = createRootRoute({
   }),
 
   component: RootLayout,
+
+  notFoundComponent: () => (
+    <div className='flex h-screen items-center justify-center'>
+      <h1 className='text-2xl font-bold'>404 - Page Not Found</h1>
+    </div>
+  ),
 })
 
+let clientQueryClientSingleton: QueryClient | undefined = undefined
+const getQueryClient = () => {
+  if (typeof window === 'undefined') return createQueryClient()
+  else return (clientQueryClientSingleton ??= createQueryClient())
+}
+
 function RootLayout() {
+  const queryClient = getQueryClient()
+
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
@@ -35,7 +54,9 @@ function RootLayout() {
       </head>
       <body className='flex min-h-dvh flex-col font-sans antialiased'>
         <ThemeProvider attribute='class' disableTransitionOnChange enableSystem>
-          <Outlet />
+          <QueryClientProvider client={queryClient}>
+            <Outlet />
+          </QueryClientProvider>
         </ThemeProvider>
 
         <Scripts />

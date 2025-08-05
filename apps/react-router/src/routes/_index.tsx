@@ -22,7 +22,7 @@ const queryOptions = createDatabaseQueryOptions({
   select: { id: true, title: true, content: true, createdAt: true },
   from: 'posts',
   where: {},
-  order: { updatedAt: 'desc' },
+  orderBy: { createdAt: 'desc' },
 })
 
 export default function HomePage() {
@@ -114,6 +114,23 @@ const PostCard: React.FC<{
     },
   )
 
+  const { mutate: update, isPending: isUpdating } = useDatabaseMutation(
+    {
+      action: 'update',
+      table: 'posts',
+    },
+    {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: queryOptions.queryKey,
+        })
+      },
+      onError: (error) => {
+        console.error('Error updating post:', error)
+      },
+    },
+  )
+
   return (
     <Card>
       <CardHeader>
@@ -126,7 +143,7 @@ const PostCard: React.FC<{
             size='icon'
             disabled={isRemoving}
             onClick={() => {
-              remove({ id: { eq: post.id } })
+              remove({ id: post.id })
             }}
           >
             <Trash2Icon />
@@ -135,6 +152,17 @@ const PostCard: React.FC<{
       </CardHeader>
       <CardContent>
         <p>{post.content}</p>
+
+        <Button
+          variant='outline'
+          size='sm'
+          disabled={isUpdating}
+          onClick={() => {
+            update({ where: { id: post.id }, data: { title: 'Updated Title' } })
+          }}
+        >
+          Update Post
+        </Button>
       </CardContent>
     </Card>
   )

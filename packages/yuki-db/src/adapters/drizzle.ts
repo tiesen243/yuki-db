@@ -86,7 +86,7 @@ export function createHandler({ db, schema }: Database) {
       if (!select || !from)
         return new Response('Invalid request', { status: 400 })
       const where = url.searchParams.get('where')
-      const order = url.searchParams.get('order')
+      const orderBy = url.searchParams.get('orderBy')
       const limit = url.searchParams.get('limit')
       const offset = url.searchParams.get('offset')
 
@@ -117,9 +117,9 @@ export function createHandler({ db, schema }: Database) {
       if (whereCondition) query.where(whereCondition)
 
       let orderCondition: SQL[] | undefined
-      if (order) {
+      if (orderBy) {
         try {
-          const orderObj = JSON.parse(order) as Record<string, 'asc' | 'desc'>
+          const orderObj = JSON.parse(orderBy) as Record<string, 'asc' | 'desc'>
           const orders = []
           for (const [key, direction] of Object.entries(orderObj)) {
             if (!select.includes(key))
@@ -157,11 +157,17 @@ export function createHandler({ db, schema }: Database) {
         query.offset(offsetValue)
       }
 
-      const result = await query.execute()
-      return Response.json(result, {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-      })
+      try {
+        const result = await query.execute()
+        return Response.json(result, {
+          headers: { 'Content-Type': 'application/json' },
+          status: 200,
+        })
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development')
+          console.error('Database query failed:', error)
+        return new Response('Database query failed', { status: 500 })
+      }
     },
 
     POST: async (request: Request) => {
@@ -180,33 +186,27 @@ export function createHandler({ db, schema }: Database) {
               status: 400,
             })
 
-          let whereCondition: SQLWrapper | undefined
-          if (where)
-            try {
-              const whereObj = JSON.parse(where)
-              whereCondition = buildWhereCondition(
-                whereObj as never,
-                schema[table] as never,
-              )
-            } catch (error: unknown) {
-              if (error instanceof Error)
-                return new Response(`Invalid where clause: ${error.message}`, {
-                  status: 400,
-                })
-              return new Response('Invalid where clause', { status: 400 })
-            }
-          if (!whereCondition)
+          const whereCondition: SQLWrapper[] = []
+          const whereObj = JSON.parse(where) as Record<string, unknown>
+          for (const [key, value] of Object.entries(whereObj))
+            whereCondition.push(eq(schema[table][key], value))
+          if (whereCondition.length === 0)
             return new Response('Where condition is required for update', {
               status: 400,
             })
 
           if (action === 'update')
-            await db.update(schema[table]).set(data).where(whereCondition)
-          else await db.delete(schema[table]).where(whereCondition)
+            await db
+              .update(schema[table])
+              .set(data)
+              .where(...whereCondition)
+          else await db.delete(schema[table]).where(...whereCondition)
         }
+
         return new Response('Operation successful', { status: 200 })
       } catch (error) {
-        console.error('Database operation failed:', error)
+        if (process.env.NODE_ENV === 'development')
+          console.error('Database operation failed:', error)
         return new Response('Database operation failed', { status: 500 })
       }
     },

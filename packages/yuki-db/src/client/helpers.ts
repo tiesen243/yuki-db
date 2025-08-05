@@ -4,6 +4,7 @@ import type {
   OrderClause,
   SelectableColumns,
   SelectedData,
+  UpdateWhereClause,
   WhereClause,
 } from '../types'
 
@@ -15,7 +16,7 @@ export const createDatabaseQueryOptions = <
   select: TSelect
   from: TFrom
   where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
-  order?: OrderClause<TFrom>
+  orderBy?: OrderClause<TFrom>
   limit?: number
   offset?: number
 }): {
@@ -30,7 +31,8 @@ export const createDatabaseQueryOptions = <
   searchParams.set('select', selectedColumns.join(','))
   searchParams.set('from', String(options.from))
   if (options.where) searchParams.set('where', JSON.stringify(options.where))
-  if (options.order) searchParams.set('order', JSON.stringify(options.order))
+  if (options.orderBy)
+    searchParams.set('orderBy', JSON.stringify(options.orderBy))
   if (options.limit) searchParams.set('limit', String(options.limit))
   if (options.offset) searchParams.set('offset', String(options.offset))
 
@@ -38,7 +40,7 @@ export const createDatabaseQueryOptions = <
     String(options.from),
     ...selectedColumns.map(String),
     ...(options.where ? [JSON.stringify(options.where)] : []),
-    ...(options.order ? [JSON.stringify(options.order)] : []),
+    ...(options.orderBy ? [JSON.stringify(options.orderBy)] : []),
     ...(options.limit ? [String(options.limit)] : []),
     ...(options.offset ? [String(options.offset)] : []),
   ]
@@ -50,10 +52,17 @@ export const createDatabaseQueryOptions = <
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
-      if (!response.ok)
+
+      if (!response.ok) {
+        if (process.env.NODE_ENV === 'development')
+          console.error(
+            'Failed to fetch data from database:',
+            await response.text(),
+          )
         throw new Error(
           `Failed to fetch data from database: ${response.statusText}`,
         )
+      }
       const json = (await response.json()) as Record<string, string>[]
       return json.map((item) => parseJson(item)) as TData[]
     },
@@ -72,11 +81,8 @@ export const createDatabaseMutationOptions = <
     data: TAction extends 'insert'
       ? TValues
       : TAction extends 'update'
-        ? {
-            where: WhereClause<ExtractTables[TTable]['$inferSelect']>
-            data: Partial<TValues>
-          }
-        : WhereClause<ExtractTables[TTable]['$inferSelect']>,
+        ? { where: UpdateWhereClause<TTable>; data: Partial<TValues> }
+        : UpdateWhereClause<TTable>,
   ) => Promise<void>
 } => {
   const mutationKey = ['db', options.action, String(options.table)]
@@ -87,11 +93,8 @@ export const createDatabaseMutationOptions = <
       data: TAction extends 'insert'
         ? TValues
         : TAction extends 'update'
-          ? {
-              where: WhereClause<ExtractTables[TTable]['$inferSelect']>
-              data: Partial<TValues>
-            }
-          : WhereClause<ExtractTables[TTable]['$inferSelect']>,
+          ? { where: UpdateWhereClause<TTable>; data: Partial<TValues> }
+          : UpdateWhereClause<TTable>,
     ) => {
       const searchParams = new URLSearchParams()
       searchParams.set('action', options.action)
@@ -112,10 +115,15 @@ export const createDatabaseMutationOptions = <
               ? JSON.stringify(data.data)
               : JSON.stringify({}),
       })
-      if (!response.ok)
+      if (!response.ok) {
+        if (process.env.NODE_ENV === 'development')
+          console.error(
+            `Failed to perform database action: ${await response.text()}`,
+          )
         throw new Error(
           `Failed to perform database action: ${response.statusText}`,
         )
+      }
     },
   }
 }

@@ -15,6 +15,10 @@ export type WhereClause<TSchema> = {
   NOT?: WhereClause<TSchema>
 }
 
+export type UpdateWhereClause<TTable extends keyof ExtractTables> = Partial<{
+  [K in keyof ExtractTables[TTable]['$inferSelect']]: ExtractTables[TTable]['$inferSelect'][K]
+}>
+
 // @ts-expect-error - schema will be registered by the user
 export type ExtractTables = Database['schema']
 

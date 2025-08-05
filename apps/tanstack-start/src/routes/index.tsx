@@ -1,28 +1,167 @@
+import * as React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useDatabaseMutation, useDatabaseQuery } from 'yuki-db'
+import {
+  createDatabaseQueryOptions,
+  useDatabaseMutation,
+  useDatabaseQuery,
+} from 'yuki-db'
+
+import { Button } from '@yuki/ui/button'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@yuki/ui/card'
+import { Trash2Icon } from '@yuki/ui/icons'
+import { Input } from '@yuki/ui/input'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
+const queryOptions = createDatabaseQueryOptions({
+  select: { id: true, title: true, content: true, createdAt: true },
+  from: 'post',
+  where: {},
+  orderBy: { updatedAt: 'desc' },
+})
+
 function HomePage() {
-  const { data } = useDatabaseQuery({
-    from: 'post',
-    select: { id: true, title: true, content: true },
-    order: {
-      content: 'asc',
+  const queryClient = useQueryClient()
+
+  const { data: posts = [], isLoading, error } = useDatabaseQuery(queryOptions)
+
+  const { mutate: create, isPending: isCreating } = useDatabaseMutation(
+    {
+      action: 'insert',
+      table: 'post',
     },
+    {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: queryOptions.queryKey })
+      },
+      onError: (error) => {
+        console.error('Error creating post:', error)
+      },
+    },
+  )
+
+  const [formData, setFormData] = React.useState({
+    title: '',
+    content: '',
   })
 
-  const a = useDatabaseMutation({
-    action: 'update',
-    table: 'post',
-  })
+  return (
+    <main className='container'>
+      <p>Is loading: {isLoading ? 'true' : 'false'}</p>
+      <p>Error: {error ? JSON.stringify(error) : 'No error'}</p>
 
-  a.mutate({
-    where: { id: { eq: '1' } },
-    data: { title: 'Updated Title' },
-  })
+      <form
+        className='grid gap-4'
+        onSubmit={(e) => {
+          e.preventDefault()
+          create(formData)
+          setFormData({ title: '', content: '' })
+        }}
+      >
+        <Input
+          placeholder='Title'
+          value={formData.title}
+          onChange={(e) => {
+            setFormData({ ...formData, title: e.target.value })
+          }}
+        />
+        <Input
+          placeholder='Content'
+          value={formData.content}
+          onChange={(e) => {
+            setFormData({ ...formData, content: e.target.value })
+          }}
+        />
 
-  return <main className='container'></main>
+        <Button disabled={isCreating}>Create Post</Button>
+      </form>
+
+      <div className='mt-4 grid grid-cols-3 gap-4'>
+        {isLoading
+          ? Array.from({ length: 3 }, (_, index) => (
+              <PostCardSkeleton key={index} />
+            ))
+          : posts.map((post) => <PostCard key={post.id} post={post} />)}
+      </div>
+    </main>
+  )
 }
+
+const PostCard: React.FC<{
+  post: { id: string; title: string; content: string; createdAt: Date }
+}> = ({ post }) => {
+  const queryClient = useQueryClient()
+
+  const { mutate: remove, isPending: isRemoving } = useDatabaseMutation(
+    {
+      action: 'delete',
+      table: 'post',
+    },
+    {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: queryOptions.queryKey,
+        })
+      },
+      onError: (error) => {
+        console.error('Error removing post:', error)
+      },
+    },
+  )
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{post.title}</CardTitle>
+        <CardDescription>{post.createdAt.toLocaleDateString()}</CardDescription>
+
+        <CardAction>
+          <Button
+            variant='ghost'
+            size='icon'
+            disabled={isRemoving}
+            onClick={() => {
+              remove({ id: post.id })
+            }}
+          >
+            <Trash2Icon />
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <p>{post.content}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+const PostCardSkeleton: React.FC = () => (
+  <Card>
+    <CardHeader>
+      <CardTitle className='w-1/2 animate-pulse rounded-md bg-current'>
+        &nbsp;
+      </CardTitle>
+      <CardDescription className='w-1/3 animate-pulse rounded-md bg-current'>
+        &nbsp;
+      </CardDescription>
+      <CardAction>
+        <Button variant='ghost' size='icon' disabled>
+          <Trash2Icon />
+        </Button>
+      </CardAction>
+    </CardHeader>
+    <CardContent>
+      <p className='h-20 w-full animate-pulse rounded-md bg-current' />
+    </CardContent>
+  </Card>
+)

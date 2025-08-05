@@ -14,6 +14,7 @@ import type {
   OrderClause,
   SelectableColumns,
   SelectedData,
+  UpdateWhereClause,
   WhereClause,
 } from '../types'
 import {
@@ -31,7 +32,7 @@ export const useDatabaseQuery = <
         select: TSelect
         from: TFrom
         where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
-        order?: OrderClause<TFrom>
+        orderBy?: OrderClause<TFrom>
         limit?: number
         offset?: number
       }
@@ -57,7 +58,7 @@ export const useDatabaseSuspenseQuery = <
         select: TSelect
         from: TFrom
         where?: WhereClause<ExtractTables[TFrom]['$inferSelect']>
-        order?: OrderClause<TFrom>
+        orderBy?: OrderClause<TFrom>
         limit?: number
         offset?: number
       }
@@ -91,11 +92,8 @@ export const useDatabaseMutation = <
       TAction extends 'insert'
         ? TValues
         : TAction extends 'update'
-          ? {
-              where: WhereClause<ExtractTables[TTable]['$inferSelect']>
-              data: Partial<TValues>
-            }
-          : WhereClause<ExtractTables[TTable]['$inferSelect']>
+          ? { where: UpdateWhereClause<TTable>; data: Partial<TValues> }
+          : UpdateWhereClause<TTable>
     >,
     'mutationKey' | 'mutationFn'
   >,
@@ -105,11 +103,8 @@ export const useDatabaseMutation = <
   TAction extends 'insert'
     ? TValues
     : TAction extends 'update'
-      ? {
-          where: WhereClause<ExtractTables[TTable]['$inferSelect']>
-          data: Partial<TValues>
-        }
-      : WhereClause<ExtractTables[TTable]['$inferSelect']>
+      ? { where: UpdateWhereClause<TTable>; data: Partial<TValues> }
+      : UpdateWhereClause<TTable>
 > => {
   if (typeof options === 'object' && 'action' in options && 'table' in options)
     options = createDatabaseMutationOptions(options)
