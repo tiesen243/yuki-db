@@ -248,7 +248,7 @@ export default function RootLayout({
 Use `useDatabaseQuery` to fetch data with automatic caching:
 
 ```tsx
-import { useDatabaseQuery } from 'yuki-db/drizzle'
+import { useDatabaseQuery } from 'yuki-db'
 
 function PostsList() {
   const {
@@ -257,7 +257,12 @@ function PostsList() {
     error,
     refetch,
   } = useDatabaseQuery({
-    select: ['id', 'title', 'content', 'createdAt'],
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      createdAt: true,
+    },
     from: 'posts',
   })
 
@@ -284,7 +289,7 @@ function PostsList() {
 ```tsx
 // Complex filtering with AND/OR conditions
 const { data: filteredPosts } = useDatabaseQuery({
-  select: ['id', 'title', 'content'],
+  select: { id: true, title: true },
   from: 'posts',
   where: {
     OR: [{ title: { like: '%typescript%' } }, { content: { like: '%react%' } }],
@@ -304,7 +309,7 @@ function PaginatedPosts() {
   const pageSize = 10
 
   const { data: posts, isLoading } = useDatabaseQuery({
-    select: ['id', 'title', 'createdAt'],
+    select: { id: true, title: true },
     from: 'posts',
     order: { createdAt: 'desc' },
     limit: pageSize,
@@ -341,24 +346,23 @@ Use `useDatabaseMutation` for data modifications:
 #### Creating Records
 
 ```tsx
-import { useDatabaseMutation } from 'yuki-db/drizzle'
+import { useDatabaseMutation } from 'yuki-db'
 
 function CreatePostForm() {
   const {
     mutate: createPost,
     isPending,
     error,
-  } = useDatabaseMutation({
-    action: 'insert',
-    table: 'posts',
-    onSuccess: (data) => {
-      console.log('Post created:', data)
-      // Optionally redirect or show success message
+  } = useDatabaseMutation(
+    {
+      action: 'insert',
+      table: 'posts',
     },
-    onError: (error) => {
-      console.error('Failed to create post:', error)
+    {
+      onSuccess: () => console.log('Post created'),
+      onError: (error) => console.error('Failed to create post:', error),
     },
-  })
+  )
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -404,13 +408,15 @@ function CreatePostForm() {
 
 ```tsx
 function EditPostForm({ postId }: { postId: number }) {
-  const { mutate: updatePost, isPending } = useDatabaseMutation({
-    action: 'update',
-    table: 'posts',
-    onSuccess: () => {
-      console.log('Post updated successfully')
+  const { mutate: updatePost, isPending } = useDatabaseMutation(
+    {
+      action: 'update',
+      table: 'posts',
     },
-  })
+    {
+      onSuccess: () => console.log('Post updated successfully'),
+    },
+  )
 
   const handleUpdate = (updates: { title?: string; content?: string }) => {
     updatePost({
@@ -443,18 +449,19 @@ function EditPostForm({ postId }: { postId: number }) {
 
 ```tsx
 function DeletePostButton({ postId }: { postId: number }) {
-  const { mutate: deletePost, isPending } = useDatabaseMutation({
-    action: 'delete',
-    table: 'posts',
-    onSuccess: () => {
-      console.log('Post deleted successfully')
+  const { mutate: deletePost, isPending } = useDatabaseMutation(
+    {
+      action: 'delete',
+      table: 'posts',
     },
-  })
+    {
+      onSuccess: () => console.log('Post deleted successfully'),
+    },
+  )
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this post?')) {
+    if (confirm('Are you sure you want to delete this post?'))
       deletePost({ id: { eq: postId } })
-    }
   }
 
   return (
@@ -473,44 +480,52 @@ function DeletePostButton({ postId }: { postId: number }) {
 
 For better code organization and reusability:
 
-```typescript
-// src/lib/queries.ts
-import { createDatabaseQueryOptions } from 'yuki-db/drizzle'
+```tsx
+// src/services/post.ts
+import {
+  createDatabaseMutationOptions,
+  createDatabaseQueryOptions,
+} from 'yuki-db'
 
 export const postQueries = {
-  all: () => createDatabaseQueryOptions({
-    select: ['id', 'title', 'content', 'createdAt'],
-    from: 'posts',
-  }),
+  all: () =>
+    createDatabaseQueryOptions({
+      select: ['id', 'title', 'content', 'createdAt'],
+      from: 'posts',
+    }),
 
-  byId: (id: number) => createDatabaseQueryOptions({
-    select: ['id', 'title', 'content', 'createdAt'],
-    from: 'posts',
-    where: { id: { eq: id } },
-  }),
+  byId: (id: number) =>
+    createDatabaseQueryOptions({
+      select: ['id', 'title', 'content', 'createdAt'],
+      from: 'posts',
+      where: { id: { eq: id } },
+    }),
 
-  recent: (limit = 10) => createDatabaseQueryOptions({
-    select: ['id', 'title', 'createdAt'],
-    from: 'posts',
-    order: { createdAt: 'desc' },
-    limit,
-  }),
+  create: () =>
+    createDatabaseMutationOptions({
+      action: 'insert',
+      table: 'posts',
+    }),
 
-  search: (query: string) => createDatabaseQueryOptions({
-    select: ['id', 'title', 'content'],
-    from: 'posts',
-    where: {
-      OR: [
-        { title: { like: `%${query}%` } },
-        { content: { like: `%${query}%` } },
-      ],
-    },
-  }),
+  update: () =>
+    createDatabaseMutationOptions({
+      action: 'update',
+      table: 'posts',
+    }),
+
+  delete: () =>
+    createDatabaseMutationOptions({
+      action: 'delete',
+      table: 'posts',
+    }),
 }
 
 // Usage in components
 function PostDetail({ id }: { id: number }) {
   const { data: post } = useDatabaseQuery(postQueries.byId(id))
+  // Alternatively, you can use the `useQuery` hook directly:
+  // import { useQuery } from '@tanstack/react-query'
+  // const { data: post } = useQuery(postQueries.byId(id))
 
   return <div>{post?.title}</div>
 }
@@ -522,11 +537,11 @@ Use `invalidateQueries` to refresh data after mutations:
 
 ```typescript
 import { useQueryClient } from '@tanstack/react-query'
-import { createDatabaseQueryOptions } from 'yuki-db/drizzle/client'
+import { createDatabaseQueryOptions } from 'yuki-db'
 
 const queryClient = useQueryClient()
 const queryOptions = createDatabaseQueryOptions({
-  select: ['id', 'title', 'content'],
+  select: { id: true, title: true },
   from: 'posts',
 })
 
@@ -581,14 +596,22 @@ const { GET, POST } = createHandler({
 Hook for fetching data with automatic caching and background updates.
 
 ```typescript
-const result = useDatabaseQuery({
-  select: string[],
-  from: string,
-  where?: WhereClause,
-  order?: OrderClause,
-  limit?: number,
-  offset?: number,
-})
+const a = 1
+
+const result = useDatabaseQuery(
+  {
+    select: {
+      id: true,
+      title: true,
+    },
+    from: 'posts',
+    where: { id: { eq: a } },
+    order: { createdAt: 'desc' },
+    limit: 10,
+    offset: 0,
+  },
+  useQueryOptions,
+)
 ```
 
 **Options:**
@@ -620,24 +643,19 @@ const result = useDatabaseQuery({
 Hook for performing database mutations with optimistic updates.
 
 ```typescript
-const mutation = useDatabaseMutation({
-  action: 'insert' | 'update' | 'delete',
-  table: string,
-  onSuccess?: (data: any) => void,
-  onError?: (error: Error) => void,
-  onMutate?: (variables: any) => void,
-  onSettled?: (data: any, error: Error | null) => void,
-})
+const mutation = useDatabaseMutation(
+  {
+    action: 'insert' | 'update' | 'delete',
+    table: string,
+  },
+  UseMutationOptions,
+)
 ```
 
 **Options:**
 
 - `action`: Type of mutation (`'insert'`, `'update'`, `'delete'`)
 - `table`: Target table name
-- `onSuccess`: Success callback
-- `onError`: Error callback
-- `onMutate`: Pre-mutation callback (for optimistic updates)
-- `onSettled`: Completion callback (success or error)
 
 **Returns:**
 
@@ -652,13 +670,17 @@ const mutation = useDatabaseMutation({
 - `reset`: Function to reset mutation state to idle
 - `status`: Current mutation status ('idle' | 'pending' | 'error' | 'success')
 
+#### `useDatabaseSuspenseQuery`
+
+Same as `useDatabaseQuery`, but throws an error if the query is not yet resolved, allowing you to use React's Suspense for loading states.
+
 #### `createDatabaseQueryOptions`
 
 Utility function to create reusable query options.
 
 ```typescript
 const options = createDatabaseQueryOptions({
-  select: ['id', 'title'],
+  select: { id: true, title: true },
   from: 'posts',
   where: { id: { eq: 1 } },
 })
@@ -669,35 +691,81 @@ const options = createDatabaseQueryOptions({
 ### Where Clause Types
 
 ```typescript
-type WhereOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'like'
+export type WhereOperator = 'eq' | 'like' | 'gt' | 'gte' | 'lt' | 'lte' | 'ne'
 
-type FieldCondition<T> = Partial<Record<WhereOperator, T>>
+export type FieldCondition<T> = Partial<Record<WhereOperator, T>>
 
-type WhereClause<TSchema> = {
+export type WhereClause<TSchema> = {
   [K in keyof TSchema]?: FieldCondition<TSchema[K]>
 } & {
   OR?: WhereClause<TSchema>[]
-  AND?: WhereClause<TSchema>[]
+  AND?: WhereClause<TSchema>
   NOT?: WhereClause<TSchema>
+}
+```
+
+### Schema Types
+
+```typescript
+export type ExtractTables = Database['schema']
+
+export type ExtractSelect<TFrom extends keyof ExtractTables> =
+  ExtractTables[TFrom] extends { $inferSelect: unknown }
+    ? ExtractTables[TFrom]['$inferSelect']
+    : ExtractTables[TFrom]
+
+export type ExtractInsert<TFrom extends keyof ExtractTables> =
+  ExtractTables[TFrom] extends { $inferInsert: unknown }
+    ? ExtractTables[TFrom]['$inferInsert']
+    : ExtractTables[TFrom]
+
+export type SelectableColumns<TFrom extends keyof ExtractTables> = {
+  [K in keyof ExtractSelect<TFrom>]?: boolean
+}
+
+export type SelectedData<TSelect, TFrom extends keyof ExtractTables> = {
+  [K in keyof TSelect as TSelect[K] extends true
+    ? K
+    : never]: ExtractSelect<TFrom>[K]
 }
 ```
 
 ### Order Clause Types
 
 ```typescript
-type OrderClause<TSelect> = Partial<Record<TSelect[number], 'asc' | 'desc'>>
+export type OrderClause<
+  TFrom extends keyof ExtractTables,
+  TField extends keyof ExtractSelect<TFrom>,
+> = Partial<Record<TField, 'asc' | 'desc'>>
 ```
 
 ### Query Options Types
 
 ```typescript
-interface DatabaseQueryOptions<TTable, TSelect> {
-  select: TSelect[]
-  from: TTable
-  where?: WhereClause<TSchema[TTable]>
-  order?: OrderClause<TSelect>
+interface DatabaseQueryOptions<
+  TFrom,
+  TSelect,
+  TData = SelectedData<TSelect, TFrom>,
+> {
+  select: TSelect
+  from: TFrom
+  where?: WhereClause<ExtractSelect<TFrom>>
+  order?: OrderClause<TFrom, keyof TSelect>
   limit?: number
   offset?: number
+}
+```
+
+### Mutation Options Types
+
+```typescript
+interface DatabaseMutationOptions<
+  TAction extends ActionType,
+  TTable extends keyof ExtractTables,
+  TValues extends ExtractInsert<TTable>,
+> {
+  action: TAction
+  table: TTable
 }
 ```
 
@@ -710,18 +778,6 @@ Before (Direct Drizzle):
 ```typescript
 const posts = await db.select().from(schema.posts).where(eq(schema.posts.id, 1))
 ```
-
-After (Yuki DB):
-
-```tsx
-const { data: posts } = useDatabaseQuery({
-  select: ['id', 'title', 'content'],
-  from: 'posts',
-  where: { id: { eq: 1 } },
-})
-```
-
-### From Direct Prisma Usage
 
 Before (Direct Prisma):
 
@@ -759,6 +815,10 @@ declare module 'yuki-db/drizzle' {
 declare module 'yuki-db/prisma' {
   interface Database {
     db: typeof db
+    schema: {
+      posts: Post
+      users: User
+    }
   }
 }
 ```
