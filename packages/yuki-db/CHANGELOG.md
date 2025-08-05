@@ -1,5 +1,11 @@
 # yuki-db
 
+## 1.0.7
+
+### Patch Changes
+
+- 35b5049: add jsdoc
+
 ## 1.0.6
 
 ### Patch Changes

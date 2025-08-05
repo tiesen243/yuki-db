@@ -1,5 +1,12 @@
 # @yuki/tanstack-start
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [35b5049]
+  - yuki-db@1.0.7
+
 ## 1.0.1
 
 ### Patch Changes
